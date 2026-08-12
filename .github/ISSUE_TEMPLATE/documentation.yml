@@ -1,0 +1,26 @@
+name: Documentation correction
+description: Report an inaccurate, unclear, stale, or missing project detail.
+title: "docs: "
+labels: [documentation]
+body:
+  - type: textarea
+    id: location
+    attributes:
+      label: Location
+      description: File, heading, link, or claim that needs attention.
+    validations:
+      required: true
+  - type: textarea
+    id: correction
+    attributes:
+      label: Proposed correction
+      description: Include the evidence tier and date when relevant.
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: I removed credentials, personal paths, device identifiers, and unreviewed media.
+          required: true

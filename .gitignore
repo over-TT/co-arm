@@ -1,0 +1,57 @@
+# Operating-system and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.user
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.token
+*.key
+*.pem
+*known-hosts*
+
+# Python, Node, and build output
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+node_modules/
+dist/
+build/
+.build/
+target/
+coverage/
+*.log
+*.tmp
+
+# Generated firmware and device backups
+*.bin
+*.elf
+*.map
+*.hex
+*.uf2
+*.eep
+*.o
+*.a
+device-backups/
+
+# Private working media; only reviewed exports belong in tracked media folders
+media/raw/
+media/private/
+*.exif.json
+
+# Local runtime and tooling
+runtime/
+output/
+artifacts/
+toolchains/
+.pnpm-store/
+.playwright-cli/
+.shots/
+.codex-tmp/
+.claude/

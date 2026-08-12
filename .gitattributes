@@ -1,0 +1,29 @@
+* text=auto
+
+*.css text eol=lf
+*.csv text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.ino text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.py text eol=lf
+*.svg text eol=lf
+*.toml text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+
+*.3mf -text
+*.f3d -text
+*.fcstd -text
+*.jpeg -text
+*.jpg -text
+*.mp4 -text
+*.pdf -text
+*.png -text
+*.step -text
+*.stl -text
+*.webp -text

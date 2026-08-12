@@ -1,0 +1,40 @@
+name: Hardware evidence
+description: Record a sanitized physical measurement or test result.
+title: "evidence: "
+labels: [hardware, evidence]
+body:
+  - type: dropdown
+    id: tier
+    attributes:
+      label: Evidence tier
+      options:
+        - live-telemetry
+        - image
+        - operator-observed
+        - measurement
+        - unverified
+    validations:
+      required: true
+  - type: textarea
+    id: setup
+    attributes:
+      label: Sanitized setup
+      description: Revision, relevant components, physical support, and test preconditions. Do not include identifiers or network details.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Result and limits
+      description: State what was observed and what it does not prove.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety and privacy
+      options:
+        - label: The sweep was clear and a physical servo-power cut was reachable.
+          required: true
+        - label: No credentials, personal details, raw identifiers, or unreviewed media are included.
+          required: true

@@ -1,0 +1,14 @@
+item_id,subsystem,description,manufacturer,manufacturer_part_number,supplier,supplier_sku,quantity,unit,revision,status,source_or_evidence,notes
+COMPUTE-001,compute,Raspberry Pi 4 single-board computer,Raspberry Pi,Raspberry Pi 4,,,1,each,,owner-verification,Recorded hardware identity,RAM capacity and board revision need label or system verification
+CONTROL-001,control,Bus Servo Driver HAT (A) with integrated ESP32,Waveshare,Bus Servo Driver HAT (A),Waveshare,27577,1,each,,recorded,Recorded product name and SKU,Photograph front and back board labels and record board revision
+ACT-001,actuation,Serial-bus servo for Base Shoulder and Elbow,Waveshare,ST3215 / STS-family,,,3,each,,owner-verification,Current working identification,Exact printed model suffix and voltage label must be checked; logical IDs 1 2 3
+ACT-002,actuation,Serial-bus camera pitch servo,,SC09 / SCS-family,,,1,each,,owner-verification,Current working identification,Exact manufacturer model and voltage label must be checked; logical ID 4
+VISION-001,vision,Raspberry Pi Camera Module 1 Rev 1.3 with OV5647 sensor,Raspberry Pi,Camera Module 1 Rev 1.3,,,1,each,1.3,recorded,Live sensor identification plus recorded module revision,Fixed focus; photograph module markings
+POWER-001,power,Candidate servo-rail DC power supply,,12 V 7.5 A 90 W candidate,,,1,each,,owner-verification,Candidate rating only,Exact model input output connector polarity cable and measured margin are not confirmed
+POWER-002,power,Camera-servo regulator or step-down converter,,,,,1,each,,TODO,Not yet documented,Confirm whether fitted and record input output setting current capability and thermal margin
+SAFE-001,power,Servo-rail fuse or over-current protection,,,,,1,each,,TODO,Not yet documented,Record type rating location and protected conductor
+SAFE-002,power,Hardware emergency stop or latched power disconnect,,,,,1,each,,TODO,Not yet documented,Software STOP is not a hardware E-stop
+MECH-001,mechanical,Base reduction parts for 4 to 1 output ratio,,,,,1,set,,owner-verification,Recorded assembled ratio,Add gear tooth counts module or pitch shafts bearings retention and CAD revisions
+MECH-002,mechanical,Printed structural and mounting parts,,,,,1,set,,TODO,Awaiting CAD and STL export,Split into one row per released printed part with material and revision
+HARDWARE-001,hardware,Fasteners inserts washers nuts spacers bearings shafts and servo horns,,,,,1,set,,TODO,Awaiting physical inventory,Split into exact standard size material quantity and matching drawing references
+WIRING-001,wiring,Power signal camera and servo-bus harnesses,,,,,1,set,,TODO,Awaiting harness trace,Split by cable with connector family wire gauge length labels and revision
