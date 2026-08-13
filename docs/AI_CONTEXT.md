@@ -7,6 +7,11 @@ addresses, controller/session/frame identifiers, and live hardware state.
 
 ## First-read order
 
+For setup, Raspberry Pi connection, assembly, or commissioning, begin with
+[`SETUP_WITH_CODEX.md`](SETUP_WITH_CODEX.md). It defines the shared human/AI
+checklist, the current documentation-only software boundary, and the allowed
+read-only Pi discovery steps.
+
 An agent should read, in order:
 
 1. [`SOFTWARE_ARCHITECTURE.md`](SOFTWARE_ARCHITECTURE.md)

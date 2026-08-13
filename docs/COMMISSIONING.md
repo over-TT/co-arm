@@ -5,6 +5,10 @@ documented first motion. It does not authorize flashing or movement by itself;
 the operator remains responsible for power isolation, mechanical support, and
 the physical work envelope.
 
+Start with [`SETUP_WITH_CODEX.md`](SETUP_WITH_CODEX.md) when a human and Codex
+are preparing the checkout or Raspberry Pi together. Return here once the
+hardware facts and software release boundary are understood.
+
 Software tests and a successful firmware build do not prove wiring, servo
 identity, supply capacity, torque removal, direction, clearance, or motion on
 the assembled arm.

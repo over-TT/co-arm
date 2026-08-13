@@ -5,6 +5,10 @@ the same Raspberry Pi policy boundary as the dashboard. The MCP process is a
 thin adapter: it does not implement a second motion controller and does not
 open the servo bus directly.
 
+For a new checkout or Raspberry Pi bring-up, start with
+[`SETUP_WITH_CODEX.md`](SETUP_WITH_CODEX.md). It gives the human and Codex one
+shared checklist before MCP configuration or any device action.
+
 ## Architecture
 
 ```mermaid

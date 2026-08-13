@@ -2,6 +2,7 @@
 
 ## Start here
 
+- [Set up co-arm with Codex](SETUP_WITH_CODEX.md)
 - [Status and evidence](STATUS.md)
 - [Open questions](OPEN_QUESTIONS.md)
 - [Known limitations](KNOWN_LIMITATIONS.md)
