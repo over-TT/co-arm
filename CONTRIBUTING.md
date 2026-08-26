@@ -1,43 +1,45 @@
 # Contributing
 
-This repository is in a documentation-first release stage. Small, reviewable
-changes with explicit evidence are preferred.
+`co-arm` is a working prototype. Keep changes focused and explain what you
+actually tried.
 
-## Before opening a change
+## Before you open a change
 
-1. Read [Status](docs/STATUS.md), [Control and safety](docs/CONTROL_AND_SAFETY.md),
-   and [Provenance](docs/PROVENANCE.md).
-2. Do not add credentials, raw logs, personal paths, unreviewed media, device
-   identifiers, or factory firmware backups.
-3. Do not describe a build/test result as physical proof.
-4. Do not copy the reference calibration into another arm and move it.
-5. Run `python tools/check_repo.py`.
+1. Read [Status](docs/STATUS.md) and the document for the part you are changing.
+2. Update the matching test, BOM row, drawing, or setup step.
+3. Keep raw logs and unreviewed media out of the commit.
+4. Run `python tools/check_repo.py`.
 
-## Evidence labels
+## Say what you checked
 
-Use one of these labels when making a claim:
+Tell us whether you:
 
-- `source`: direct inspection of source or configuration;
-- `automated-test`: a named test and result;
-- `build`: a named compiler/build and result;
-- `live-telemetry`: a dated read from connected hardware;
-- `image`: visible evidence from a dated frame;
-- `operator-observed`: a dated physical observation;
-- `unverified`: a candidate or open assumption.
+- read the code;
+- ran tests;
+- built the software or firmware;
+- tried it on the real arm;
+- checked a photo or camera frame;
+- have not checked it yet.
+
+Use normal sentences. A passing test does not mean the real arm moved, and a
+move command does not mean the joints reached the target.
 
 ## Hardware changes
 
 For a mechanical or electrical change, include:
 
-- affected part/revision;
-- reason and failure mode addressed;
-- drawing or photo;
+- the affected part and revision;
+- the reason for the change and the failure mode it addresses;
+- a drawing or photo;
 - material and manufacturing details;
-- measurement method and result;
-- whether the change was installed and physically tested;
-- rollback or previous revision when relevant.
+- the measurement method and result;
+- whether it was installed and physically tested;
+- the rollback or previous revision when relevant.
 
-## Media
+For a printed part, also update `hardware/3mf/README.md` or the matching CAD/STL
+record, the BOM row, and the assembly step it changes.
+
+## Photos and video
 
 Use the [media intake workflow](docs/MEDIA_GUIDE.md). Do not commit anything
 from `media/raw/`; it is intentionally ignored.

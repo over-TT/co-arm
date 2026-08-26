@@ -1,0 +1,243 @@
+.armcc-main.is-live { overflow: hidden; }
+.armcc-main.is-live .armcc-panel { height: 100%; min-height: 0; }
+
+.arm-live-follow {
+  --live-bg: #101112;
+  --live-panel: #171819;
+  --live-inset: #0b1014;
+  --live-border: #2b2d2f;
+  --live-border-strong: #3b3e41;
+  --live-text: #e7e8e9;
+  --live-muted: #969a9f;
+  --live-accent: #83c4dc;
+  --live-danger: #d0636d;
+  background: var(--live-bg);
+  color: var(--live-text);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.arm-live-follow-sr-only {
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.arm-live-follow button {
+  background: #1b1d1f;
+  border: 1px solid var(--live-border-strong);
+  border-radius: 6px;
+  color: var(--live-text);
+  cursor: pointer;
+  font: 500 12px/18px Inter, "Segoe UI", sans-serif;
+  min-height: 34px;
+  padding: 7px 12px;
+}
+.arm-live-follow button:hover:not(:disabled) { background: #24272a; border-color: #50545a; }
+.arm-live-follow button:focus-visible { outline: 2px solid var(--live-accent); outline-offset: 2px; }
+.arm-live-follow button:disabled { cursor: not-allowed; opacity: .42; }
+
+.arm-live-follow-header {
+  align-items: center;
+  border-bottom: 1px solid var(--live-border);
+  display: flex;
+  gap: 28px;
+  justify-content: space-between;
+  min-height: 76px;
+  padding: 13px 20px;
+}
+.arm-live-follow-kicker { color: var(--live-accent); font: 650 10px/14px "Cascadia Code", Consolas, monospace; letter-spacing: .08em; }
+.arm-live-follow-header h1 { font-size: 17px; font-weight: 600; letter-spacing: -.01em; line-height: 23px; margin: 2px 0 0; }
+.arm-live-follow-header p { color: var(--live-muted); font-size: 12px; line-height: 17px; margin: 2px 0 0; max-width: 760px; }
+.arm-live-follow .arm-live-follow-stop { background: #711d28; border-color: #a93c49; color: #fff; flex: none; font-weight: 700; min-height: 38px; padding-inline: 18px; }
+.arm-live-follow .arm-live-follow-stop:hover { background: #872533; }
+
+.arm-live-follow-settings {
+  background: #141516;
+  border-bottom: 1px solid var(--live-border);
+  flex: none;
+  padding: 10px 20px 9px;
+}
+.arm-live-follow-settings-header { align-items: center; display: flex; gap: 20px; justify-content: space-between; margin-bottom: 8px; }
+.arm-live-follow-settings-header h2 { font-size: 13px; font-weight: 600; line-height: 18px; margin: 0; }
+.arm-live-follow-settings-header p { color: var(--live-muted); font-size: 10px; line-height: 15px; margin: 1px 0 0; }
+.arm-live-follow-session-actions { align-items: center; display: flex; flex: none; gap: 10px; }
+.arm-live-follow-session-actions > span { color: var(--live-muted); font: 10px/14px "Cascadia Code", Consolas, monospace; }
+.arm-live-follow .arm-live-follow-enable,
+.arm-live-follow .arm-live-follow-end { min-width: 142px; }
+.arm-live-follow .arm-live-follow-enable { background: #183541; border-color: #447f95; color: #b9e9fa; }
+
+.arm-live-follow-settings-grid { border: 0; display: grid; gap: 5px; margin: 0; min-width: 0; padding: 0; }
+.arm-live-follow-setting-row {
+  align-items: start;
+  background: #111314;
+  border: 1px solid var(--live-border);
+  border-radius: 6px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 76px minmax(310px, 1.45fr) minmax(170px, .8fr) minmax(250px, 1.15fr);
+  min-width: 0;
+  padding: 7px 8px;
+}
+.arm-live-follow-settings-grid:disabled .arm-live-follow-setting-row { background: #121313; }
+.arm-live-follow-setting-joint { align-self: center; display: grid; gap: 1px; padding-left: 3px; }
+.arm-live-follow-setting-joint strong { font-size: 11px; font-weight: 600; line-height: 15px; }
+.arm-live-follow-setting-joint span { color: var(--live-muted); font: 9px/13px "Cascadia Code", Consolas, monospace; }
+.arm-live-follow-setting { min-width: 0; }
+.arm-live-follow-setting > label { align-items: baseline; color: #c6c9cc; display: flex; font-size: 10px; font-weight: 600; gap: 6px; justify-content: space-between; line-height: 14px; margin-bottom: 3px; }
+.arm-live-follow-setting > label span { color: var(--live-muted); font: 9px/13px "Cascadia Code", Consolas, monospace; font-weight: 400; white-space: nowrap; }
+.arm-live-follow-setting-line { align-items: center; display: grid; gap: 7px; grid-template-columns: minmax(52px, 1fr) 58px; }
+.arm-live-follow-setting input[type="range"] { accent-color: var(--live-accent); cursor: pointer; margin: 0; min-width: 0; width: 100%; }
+.arm-live-follow-setting input[type="number"] {
+  appearance: textfield;
+  background: var(--live-inset);
+  border: 1px solid var(--live-border-strong);
+  border-radius: 4px;
+  color: var(--live-text);
+  font: 600 11px/16px "Cascadia Code", Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  height: 28px;
+  padding: 4px 5px;
+  text-align: right;
+  width: 58px;
+}
+.arm-live-follow-setting input[type="number"]::-webkit-inner-spin-button,
+.arm-live-follow-setting input[type="number"]::-webkit-outer-spin-button { opacity: .55; }
+.arm-live-follow-setting input:focus-visible { outline: 2px solid var(--live-accent); outline-offset: 2px; }
+.arm-live-follow-setting input:disabled { cursor: not-allowed; opacity: .48; }
+.arm-live-follow-presets { display: flex; gap: 3px; margin-top: 4px; min-width: 0; }
+.arm-live-follow-presets button { border-radius: 4px; flex: 1 1 auto; font: 500 9px/13px "Cascadia Code", Consolas, monospace; min-height: 24px; padding: 3px 4px; }
+.arm-live-follow-presets button[aria-pressed="true"] { background: #17313c; border-color: #4c8ca3; color: #b9e9fa; }
+.arm-live-follow-settings-note { color: var(--live-muted); font-size: 9px; line-height: 14px; margin: 7px 0 0; text-wrap: pretty; }
+
+.arm-live-follow-base-reference {
+  align-items: start;
+  background: rgba(192, 160, 107, .08);
+  border-bottom: 1px solid var(--live-border);
+  border-left: 3px solid #c0a06b;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 8px 20px 8px 17px;
+}
+.arm-live-follow-base-reference > strong {
+  color: #d8b778;
+  font: 650 10px/16px "Cascadia Code", Consolas, monospace;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+.arm-live-follow-base-reference > p {
+  color: #c8c2b7;
+  font-size: 11px;
+  line-height: 16px;
+  margin: 0;
+}
+.arm-live-follow-base-reference b { color: var(--live-text); font-weight: 600; }
+
+.arm-live-follow-blocked,
+.arm-live-follow-status {
+  border-bottom: 1px solid var(--live-border);
+  font-size: 11px;
+  line-height: 16px;
+  margin: 0;
+  padding: 7px 20px;
+}
+.arm-live-follow-blocked { background: rgba(191, 139, 63, .08); color: #d8b778; }
+.arm-live-follow-status { background: #111619; color: var(--live-muted); }
+
+.arm-live-follow-workspace {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(0, 1fr) minmax(390px, 480px);
+  min-height: 0;
+}
+.arm-live-follow-canvas { border-right: 1px solid var(--live-border); min-height: 0; overflow: hidden; }
+.arm-live-follow .arm2d.is-planar-only { grid-template-columns: minmax(0, 1fr); height: 100%; padding: 13px 16px 9px; }
+.arm-live-follow .arm2d.is-planar-only .arm2d-side { min-height: 280px; }
+.arm-live-follow .arm2d.is-planar-only .arm2d-pane > p { color: var(--live-muted); font-size: 11px; line-height: 16px; }
+
+.arm-live-follow-inspector { background: var(--live-panel); min-height: 0; overflow: auto; padding: 14px 16px 22px; }
+.arm-live-follow-session-line { align-items: center; border-bottom: 1px solid var(--live-border); display: flex; gap: 7px; min-height: 34px; padding-bottom: 9px; }
+.arm-live-follow-session-line strong { font: 650 11px/16px "Cascadia Code", Consolas, monospace; }
+.arm-live-follow-session-line code { color: var(--live-muted); font-size: 10px; margin-left: auto; }
+.arm-live-follow-dot { background: #65696d; border-radius: 50%; height: 7px; width: 7px; }
+.arm-live-follow-dot.is-active { background: #79a98b; box-shadow: 0 0 0 3px rgba(121, 169, 139, .13); }
+.arm-live-follow-dot.is-starting,
+.arm-live-follow-dot.is-ending { background: #c0a06b; }
+
+.arm-live-follow-joints,
+.arm-live-follow-history table { border-collapse: collapse; font-size: 10px; line-height: 15px; margin-top: 13px; width: 100%; }
+.arm-live-follow-joints caption { color: var(--live-muted); font: 600 10px/15px "Cascadia Code", Consolas, monospace; padding: 0 0 6px; text-align: left; text-transform: uppercase; }
+.arm-live-follow-joints th,
+.arm-live-follow-joints td,
+.arm-live-follow-history th,
+.arm-live-follow-history td { border-bottom: 1px solid var(--live-border); padding: 7px 5px; text-align: right; white-space: nowrap; }
+.arm-live-follow-joints thead th,
+.arm-live-follow-history thead th { color: var(--live-muted); font-weight: 500; }
+.arm-live-follow-joints th:first-child,
+.arm-live-follow-joints td:first-child,
+.arm-live-follow-history th:first-child,
+.arm-live-follow-history td:first-child { padding-left: 0; text-align: left; }
+.arm-live-follow-joints tbody th { color: var(--live-text); font-weight: 500; }
+.arm-live-follow-joints tbody td { color: #c6c9cc; font-family: "Cascadia Code", Consolas, monospace; }
+
+.arm-live-follow-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 14px 0 0; }
+.arm-live-follow-metrics > div { border: 1px solid var(--live-border); min-width: 0; padding: 8px 7px; }
+.arm-live-follow-metrics > div:not(:nth-child(3n + 1)) { border-left: 0; }
+.arm-live-follow-metrics > div:nth-child(n + 4) { border-top: 0; }
+.arm-live-follow-metrics dt { color: var(--live-muted); font-size: 9px; line-height: 13px; }
+.arm-live-follow-metrics dd { color: var(--live-text); font: 600 12px/18px "Cascadia Code", Consolas, monospace; margin: 1px 0 0; }
+.arm-live-follow-caveat { border-left: 2px solid #4c8ca3; color: var(--live-muted); font-size: 10px; line-height: 15px; margin: 14px 0 0; padding: 3px 0 3px 9px; }
+
+.arm-live-follow-history { margin-top: 18px; }
+.arm-live-follow-history h2 { font-size: 12px; font-weight: 600; line-height: 18px; margin: 0; }
+.arm-live-follow-history > p { color: var(--live-muted); font-size: 11px; margin: 8px 0 0; }
+.arm-live-follow-history table { margin-top: 5px; }
+.arm-live-follow-history tbody td { color: #c6c9cc; font-family: "Cascadia Code", Consolas, monospace; }
+
+@media (max-width: 1050px) {
+  .arm-live-follow-setting-row { gap: 8px; grid-template-columns: 66px minmax(280px, 1.35fr) minmax(145px, .75fr) minmax(220px, 1fr); }
+  .arm-live-follow-workspace { grid-template-columns: minmax(0, 1fr) 390px; }
+}
+
+@media (max-width: 850px) {
+  .arm-live-follow { height: auto; min-height: 100%; }
+  .arm-live-follow-header { align-items: flex-start; }
+  .arm-live-follow-settings-header { align-items: flex-start; }
+  .arm-live-follow-setting-row { grid-template-columns: 64px minmax(250px, 1.3fr) minmax(140px, .75fr) minmax(210px, 1fr); }
+  .arm-live-follow-workspace { display: block; }
+  .arm-live-follow-canvas { border-bottom: 1px solid var(--live-border); border-right: 0; min-height: 460px; }
+  .arm-live-follow-inspector { overflow: visible; }
+}
+
+@media (max-width: 720px) {
+  .arm-live-follow-setting-row { grid-template-columns: 1fr 1fr; }
+  .arm-live-follow-setting-joint,
+  .arm-live-follow-setting.is-speed { grid-column: 1 / -1; }
+  .arm-live-follow-presets button { min-height: 30px; }
+}
+
+@media (max-width: 560px) {
+  .arm-live-follow-header { padding-inline: 14px; }
+  .arm-live-follow-header p { display: none; }
+  .arm-live-follow-settings { padding-inline: 14px; }
+  .arm-live-follow-settings-header { display: block; }
+  .arm-live-follow-session-actions { justify-content: space-between; margin-top: 8px; }
+  .arm-live-follow-presets button { min-height: 32px; }
+  .arm-live-follow-base-reference { gap: 2px; grid-template-columns: 1fr; padding-inline: 11px 14px; }
+  .arm-live-follow-blocked,
+  .arm-live-follow-status { padding-inline: 14px; }
+  .arm-live-follow-joints { display: block; overflow-x: auto; }
+  .arm-live-follow-metrics { grid-template-columns: repeat(2, 1fr); }
+  .arm-live-follow-metrics > div { border: 1px solid var(--live-border); }
+  .arm-live-follow-metrics > div:nth-child(even) { border-left: 0; }
+  .arm-live-follow-metrics > div:nth-child(n + 3) { border-top: 0; }
+}

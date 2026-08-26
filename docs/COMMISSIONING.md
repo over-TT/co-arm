@@ -50,7 +50,8 @@ Do not count a dashboard button as the physical power cut.
 
 Read [`../software/README.md`](../software/README.md). Confirm that:
 
-- firmware, gateway, MCP, and dashboard source status is understood;
+- dashboard, backend, gateway, MCP/plugin, simulator, firmware, and operations
+  source status is understood;
 - local credentials and endpoint configuration are outside Git;
 - toolchain versions are recorded locally;
 - source tests can be run before deployment;
@@ -82,11 +83,11 @@ Only one host may drive the ESP32 host UART while flashing. Disconnect or
 isolate the Pi serial side before connecting a USB flashing host. Keep servo
 power off for the flash.
 
-## 3. Build and flash firmware 2.4
+## 3. Build and flash Arm HAT firmware 2.7.2
 
-1. After the source release is added, build the exported ESP32 sketch against
-   its Arm HAT controller library. Until then, use the reviewed private source
-   package and do not treat this documentation repository as flashable.
+1. Build the exported ESP32 sketch against its bundled Arm HAT controller
+   library using a reviewed local toolchain. Toolchains and generated binaries
+   are not committed.
 2. Save the build log and artifact hash locally.
 3. Confirm the exact target board and flash port.
 4. Isolate competing UART hosts.
@@ -169,7 +170,7 @@ from the arm joints. It still needs its own zero and safe travel limits.
 
 ## 8. Configure and home the Base absolute frame
 
-The reference firmware 2.4 Base path uses ST3215 native Mode-0 absolute
+The reference Arm HAT 2.7.2 Base path uses ST3215 native Mode-0 absolute
 multi-turn operation. The verified reference profile expects:
 
 - Phase register BIT4 enabled (the reference value was `28`);
@@ -239,16 +240,28 @@ Record requested, resolved, and measured angles separately.
 
 1. Capture a fresh frame without motion.
 2. Confirm the delivered image is upright.
-3. Confirm the reported sensor capability: the reference OV5647 is fixed-focus.
+3. Confirm Camera Module 3 Wide / IMX708 identity and array/profile state. IMX708
+   alone does not prove the Wide lens variant.
 4. Verify Camera positive physically moves the view downward.
 5. Build a Base-`0 deg`, elevated/retracted desk survey through plan/apply.
-6. Save a named viewpoint only after measured arrival and pixel coverage are
+6. Request autofocus where appropriate, then require same-capture AF/lens
+   metadata and visible subject detail; the request alone is not focus proof.
+7. Save a named viewpoint only after measured arrival and pixel coverage are
    both verified.
-7. Reverify that view after any bracket, camera, geometry, zero, or limit change.
+8. Reverify that view after any bracket, camera, geometry, zero, or limit change.
 
 Do not publish an unreviewed desk capture. See [`VISION.md`](VISION.md).
 
-## 12. Restart and fail-safe checks
+## 12. Commission Live Follow last
+
+Only after ordinary joint motion, feedback, STOP, lease, and floor behavior are
+proved should a deliberate REAL Live Follow session be considered. Start with a
+small travel envelope. Confirm the separate heartbeat/dead-man path, grouped
+Shoulder/Elbow feedback, measured trace, orderly release, and torque-off state.
+Raw speed is not degrees per second, and the exported policy rejects
+acceleration above `50` rather than silently pretending it was applied.
+
+## 13. Restart and fail-safe checks
 
 Place the arm in a verified clear rest pose or support it mechanically before a
 service/controller restart. A restart can outlast the heartbeat and hold lease,

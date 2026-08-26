@@ -1,24 +1,23 @@
-# Control and safety
+# Control notes
 
-co-arm is a bench-scale research arm. This repository does not establish any
-industrial, collaborative-robot, machinery-safety, or functional-safety
-certification. Treat every software guard as one layer, not as a substitute for
-a reachable physical servo-power cut, mechanical support, and a clear work
-envelope.
+co-arm is a real desk arm with gravity-loaded links and printed gears. The main
+physical facts are simple: keep a way to remove servo power, support a raised
+link before releasing it, and keep the intended path clear. The software checks
+help, but they cannot see every cable, tool, or object on the desk.
 
-## Safety ownership
+## Who does what
 
 ```mermaid
 flowchart TD
-    O["Operator: clearance, support, physical power cut"] --> P["Pi: authentication, calibration, floor/sweep policy"]
-    P --> E["ESP32: watchdog, lease, STOP, torque-off supervision"]
+    O["Person: clear desk, support arm, servo power"] --> P["Pi: camera, calibration, move checks"]
+    P --> E["ESP32: servo bus, STOP, lost-signal release"]
     E --> S["Servos: local position loop and feedback"]
 ```
 
-No layer may use a higher layer's success as proof that its own responsibility
-is satisfied.
+Each layer has a different job. A dashboard message does not replace reading
+the servos, and a servo position does not replace looking at the real desk.
 
-## Non-negotiable physical rules
+## Physical basics
 
 - Keep a tested, reachable method to remove **servo power**. A software STOP is
   useful but is not an independently wired emergency stop.
@@ -38,7 +37,7 @@ is satisfied.
 
 ## Firmware safety limits
 
-The ESP32 is the final electrical authority. Current firmware 2.4 uses these
+The ESP32 is the final electrical authority. Current Arm HAT firmware 2.7.2 uses these
 fixed supervision limits:
 
 | Mechanism | Current limit / behavior |
@@ -84,7 +83,7 @@ These actions are different:
 An operator STOP must never be cleared autonomously. Clearing it requires an
 explicit decision after the physical cause has been checked.
 
-## Raspberry Pi policy layer
+## What the Pi checks before a move
 
 The Pi is the high-level motion authority and enforces:
 
@@ -128,7 +127,7 @@ Behavior differs by interface:
 The floor guard knows only the configured side-view floor. It does not sense
 walls, people, loose cables, a shifted base, or objects on the desk.
 
-## Plan/apply safety transaction
+## Preview, then move
 
 Use plan/apply whenever numeric or spatial review is useful.
 
@@ -160,6 +159,19 @@ An apply response proves command acceptance only. Verify measured arrival with
 live state. If the next action depends on a stable image, also allow the arm to
 settle before capture.
 
+## Live Follow boundary
+
+Live Follow is a separate deliberate REAL-only mode for Shoulder and Elbow. It
+does not bypass the Pi or Arm HAT. The browser coalesces input while a separate
+strict heartbeat renews the lease; the Pi dispatches no faster than 20 Hz and
+the controller writes/verifies both goals together. Sessions end after at most
+30 seconds, and a 400 ms input dead-man stops stale intent from continuing.
+
+Each joint is bounded to raw speed `1..2400`, raw acceleration `1..50`, and a
+start-relative travel span `1..90 deg`, further intersected with calibrated
+reach and the floor guard. These bounds do not sense obstacles, cables, load,
+overshoot, self-contact, or people.
+
 ## Base continuity and re-home
 
 The Base uses the ST3215's native signed extended-position coordinate. The
@@ -179,7 +191,7 @@ After a real continuity loss:
 Never reconstruct the output revolution from a single-turn reading and never
 copy a previous live angle into a new boot as truth.
 
-## AI and remote-control boundary
+## Using Codex
 
 - Reading state, rendering a scene, and planning are non-motion operations.
 - A physical inspection request may authorize bounded camera viewpoint moves
@@ -206,7 +218,7 @@ copy a previous live angle into a new boot as truth.
 
 If any item is unknown, do not move until that specific condition is resolved.
 
-## Evidence boundary
+## What software tests do not tell you
 
 Unit tests can prove watchdog arithmetic, plan invalidation, floor geometry,
 schema rejection, and error handling. They cannot prove a physical power cut,

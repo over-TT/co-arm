@@ -82,7 +82,7 @@ choose an output revolution from a single-turn reading alone.
 
 ### `ODOMETER_UNAVAILABLE`, invalid Base truth, or missing native capability
 
-Do not move Base. Verify firmware 2.4/native capability, stable controller boot,
+Do not move Base. Verify Arm HAT 2.7.2/native capability, stable controller boot,
 fresh native-frame evidence, Mode 0, and the verified multi-turn
 configuration. Re-home if continuity cannot be proven.
 
@@ -131,7 +131,7 @@ guard.
 | Capture succeeds but UI image fails | Browser/object-URL/proxy loading stage, not shutter | Preserve the capture error boundary and debug the display path separately |
 | Subject absent after moving | Target pose did not guarantee framing | Verify measured arrival, inspect scene ray, then make a bounded coordinated correction |
 | Survey does not cover desk | Stored/guessed viewpoint or current geometry differs | Rebuild the Base-0 elevated survey from live state and pixels |
-| Closer frame is softer | Fixed-focus standoff crossed the useful range | Back away; compare visible subject detail at similar framing |
+| Closer frame is softer | AF has not settled, macro/normal range is wrong, or standoff is unsuitable | Check same-frame AF/lens metadata and visible subject detail; change focus range or standoff |
 | `FocusFoM` rises but subject is worse | Background texture dominates whole-frame score | Trust subject ROI readability and edges |
 | AF is `configured` but not `focused` | Control request has no same-frame focus proof | Require valid capture AF metadata and improved subject detail |
 | Detail crop source unavailable | Bounded retained-frame history expired or was not saved | Take a new survey; do not reuse an old runtime identifier |
@@ -148,13 +148,16 @@ guard.
   Pi service only after the arm is supported or in a verified clear rest pose.
 - **MCP edit has no effect:** restart the MCP process/new task; the Pi service is
   a separate process.
-- **Dashboard source is absent or will not build alone:** the documentation
-  release reserves its folder, while the private Arm modules still depend on a
-  host React application, shared styles/configuration, and backend routes. This
-  clean export does not yet claim a standalone app.
-- **Backend startup asks for unrelated toolchains/assets:** the implementation
-  came from a broader application. Complete the pending arm-only packaging
-  work; do not commit bundled toolchains or private state as a shortcut.
+- **Dashboard will not build:** work from `software/dashboard/`, use the pinned
+  package manager/lockfile, and distinguish dependency-install failure from a
+  TypeScript, test, or Vite failure.
+- **Backend cannot find the frontend:** build the dashboard first and confirm
+  the standalone runtime's static-directory path. Do not point it at a broader
+  private application as a shortcut.
+- **Agent tools are unavailable:** confirm the co-arm Python environment is the
+  interpreter used by MCP, start a new task after plugin/config changes, and
+  verify the selected SIM or REAL URL/token-file pair. This is separate from
+  dashboard or gateway health.
 
 ## What to capture in a bug report
 

@@ -1,22 +1,45 @@
-# Software
+# ARM software
 
-This tree is a documented release boundary, not yet an executable source
-release. The implementation is working in a larger private parent workspace,
-but copying that workspace would also publish unrelated code, local runtime
-state, generated artifacts, and installation-specific details.
+This is the executable, ARM-only source boundary. Its project root is this
+`software/` directory; runtime state belongs in ignored `software/runtime/`.
 
-| Folder | Intended contents | Current state |
-| --- | --- | --- |
-| `firmware/` | ESP32 Arm HAT sketch, controller/protocol library, arm-only host tests | Reserved; source pending scope and license |
-| `gateway/` | Complete Raspberry Pi `robot_gateway` package, tests, service template, dependencies | Reserved; source pending scope and license |
-| `mcp/` | Canonical typed Arm MCP server, tests, portable configuration example | Reserved; source pending scope and license |
-| `dashboard/` | Standalone Arm Lab UI and an arm-only backend/proxy | Reserved; requires extraction work |
+| Folder | Contents |
+| --- | --- |
+| `dashboard/` | Standalone Vite/React Control Center, calibration, camera, and bounded Live Follow |
+| `python/web_backend/` | Loopback-only FastAPI host and explicit SIM/REAL routing |
+| `python/robot_gateway/` | Raspberry Pi gateway, camera, serial controller, calibration, motion policy, and tests |
+| `python/arm_sim/` | Core authenticated Isaac bridge, digital-twin assets, viewer, gateway, and tests |
+| `python/arm_mcp/` | Typed ARM MCP server |
+| `firmware/` | Arm HAT firmware/library, protocol fixtures, and host tests |
+| `operations/` | Parameterized deployment, recovery, status, service, firmware-build, and simulator helpers |
+| `plugin/` | Repo-local Codex marketplace, setup/runtime skills, and machine-local MCP setup guidance |
 
-The recommended allowlist and release gates are in
-[`docs/SOURCE_RELEASE_PLAN.md`](../docs/SOURCE_RELEASE_PLAN.md). Do not put
-tokens, endpoints, sessions, retained frames, logs, factory backups, generated
-binaries, bundled toolchains, or an installed plugin configuration here.
+[`SOURCE_INDEX.json`](SOURCE_INDEX.json) maps the canonical entrypoints.
+[`SOURCE_MANIFEST.json`](SOURCE_MANIFEST.json) records every releasable software
+file and digest; regenerate it from the repository root with
+`python tools/build_source_manifest.py` after an intentional source change.
 
-Historical source checks in the private parent workspace are recorded in
-[`docs/STATUS.md`](../docs/STATUS.md). They are not clean-checkout proof for
-this repository.
+Quick verification from the repository root:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --requirement ".\software\python\requirements.lock"
+.\.venv\Scripts\python.exe -m pip install --no-deps --editable ".\software\python"
+
+Set-Location software\python
+..\..\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider
+..\..\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider ..\firmware\tests\test_arm_hat_controller_v1.py
+
+Set-Location ..\dashboard
+pnpm install --frozen-lockfile
+pnpm test
+pnpm build
+Set-Location ..\..
+```
+
+Run the dashboard with `.\.venv\Scripts\python.exe -m web_backend`. A clean
+checkout starts without a physical or simulated gateway; pass an explicit
+loopback URL and local token-file pair to enable one. The supported agent path
+is the repository contract plus external plugin; Codex binaries, authentication,
+installed plugin configuration, live credentials, retained frames, databases,
+device backups, generated scenes, and toolchains are deliberately not bundled.

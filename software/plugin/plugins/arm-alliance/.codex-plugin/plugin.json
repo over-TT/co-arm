@@ -1,0 +1,22 @@
+{
+  "name": "arm-alliance",
+  "version": "0.3.0",
+  "description": "Helps Codex set up and operate the focused Raspberry Pi and ESP32 desk-arm stack with bounded planning and current telemetry.",
+  "author": {
+    "name": "co-arm project"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Arm Alliance",
+    "shortDescription": "Set up and use a four-axis desk arm.",
+    "longDescription": "Guides a co-arm checkout from source validation through simulation and commissioning, then connects Codex to an explicitly configured Raspberry Pi ARM gateway without bundling credentials, runtime state, or machine-specific paths.",
+    "developerName": "co-arm project",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "defaultPrompt": [
+      "Help me validate and set up co-arm from this checkout.",
+      "Start the co-arm Isaac Sim stack and attach the dashboard.",
+      "Read the current arm state and show its 2D scene."
+    ]
+  }
+}

@@ -1,19 +1,29 @@
-# Arm HAT firmware source — pending
+# ARM firmware
 
-This folder is reserved for:
+This directory contains the ESP32 Arm HAT firmware and its host-side tests:
 
-- the ESP32 Arm HAT sketch;
-- the complete `ArmHatController` library;
-- a current protocol document generated/reviewed against firmware 2.4;
-- arm-only host tests and Arduino stubs;
-- a reproducible compile script using a system Arduino CLI and pinned ESP32
-  core;
-- source-level third-party notices.
+- `esp32/arm_hat_controller/` — the ESP32 Arm HAT sketch;
+- `libraries/ArmHatController/` — bounded servo protocol and safety runtime;
+- `tests/` — Arm HAT C++ host tests, Arduino stubs, and sanitized fixtures;
+- `ARM_HAT_CONTROLLER_V1.md` — the current host/HAT protocol contract.
 
-Do not add generated BIN/ELF/MAP/object files or the device's factory firmware
-backup. Do not include legacy raw-register diagnostic scripts that can alter a
-servo or move it outside the typed gateway workflow.
+Generated BIN, ELF, MAP, object, and factory-backup files are not part of the
+source release. The compile helper uses a caller-supplied system Arduino CLI,
+requires the pinned ESP32 core, writes to an explicit build directory, and
+never uploads firmware:
 
-Firmware source will be added only after the owner confirms software licensing
-and attribution. A build will remain software proof; flashing and motion need
-separate controlled hardware evidence.
+```powershell
+./operations/scripts/compile-firmware.ps1 `
+  -ArduinoCli <path-to-arduino-cli> `
+  -BuildRoot <temporary-build-directory>
+```
+
+Run the source/host tests from `software/`:
+
+```powershell
+$env:PYTHONPATH = "python"
+python -m pytest -q firmware/tests/test_arm_hat_controller_v1.py
+```
+
+A passing build or host test is software evidence. It does not prove a flash,
+controller identity, servo-bus health, torque state, or physical motion.

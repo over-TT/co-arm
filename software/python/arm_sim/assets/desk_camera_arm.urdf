@@ -1,0 +1,203 @@
+<?xml version="1.0"?>
+<!--
+  Primitive simulation seed for the four-axis desk camera arm.
+
+  Measured kinematic lengths come from robot_gateway/simple_arm_api.py.  The
+  primitive shell sizes, masses, inertias, damping, effort and velocity limits
+  are deliberately provisional; arm_sim/config/arm_model.json is the source of
+  truth for that evidence boundary.
+
+  URDF coordinates use metres, kilograms, radians, x-forward, y-left, z-up.
+  The four revolute joint positions are intentionally the real servo degrees
+  converted directly to radians (no hidden zero offset):
+    * Shoulder 0: upper arm points straight up.
+    * Elbow 0 at Shoulder 0: forearm points forward; Elbow 90 is straight up.
+    * Camera 0: optical axis points along the forearm; positive aims down.
+-->
+<robot name="desk_camera_arm_v0">
+  <material name="base_dark">
+    <color rgba="0.10 0.12 0.15 1.0"/>
+  </material>
+  <material name="arm_blue">
+    <color rgba="0.16 0.45 0.78 1.0"/>
+  </material>
+  <material name="joint_silver">
+    <color rgba="0.56 0.60 0.66 1.0"/>
+  </material>
+  <material name="camera_black">
+    <color rgba="0.025 0.03 0.04 1.0"/>
+  </material>
+
+  <!-- Empty anchoring link makes this asset explicitly fixed-base. -->
+  <link name="world"/>
+
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0.030" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.055" length="0.060"/></geometry>
+      <material name="base_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.030" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.055" length="0.060"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0.030" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.00105625" ixy="0" ixz="0" iyy="0.00105625" iyz="0" izz="0.0015125"/>
+    </inertial>
+  </link>
+
+  <joint name="base_fixed_joint" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="shoulder_mount_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.080 0.080 0.060"/></geometry>
+      <material name="joint_silver"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.080 0.080 0.060"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.35"/>
+      <inertia ixx="0.000291667" ixy="0" ixz="0" iyy="0.000291667" iyz="0" izz="0.000373333"/>
+    </inertial>
+  </link>
+
+  <joint name="base_yaw_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="shoulder_mount_link"/>
+    <!-- Measured physical Base/Shoulder pivot height: 60 mm. -->
+    <origin xyz="0 0 0.060" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.141592654" upper="3.141592654" effort="20.0" velocity="0.523599"/>
+    <dynamics damping="0.30" friction="0.05"/>
+  </joint>
+
+  <link name="upper_arm_link">
+    <visual>
+      <origin xyz="0 0 0.090" rpy="0 0 0"/>
+      <geometry><box size="0.035 0.040 0.180"/></geometry>
+      <material name="arm_blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.090" rpy="0 0 0"/>
+      <geometry><box size="0.035 0.040 0.180"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0.090" rpy="0 0 0"/>
+      <mass value="0.30"/>
+      <inertia ixx="0.00085" ixy="0" ixz="0" iyy="0.000840625" iyz="0" izz="0.000070625"/>
+    </inertial>
+  </link>
+
+  <joint name="shoulder_pitch_joint" type="revolute">
+    <parent link="shoulder_mount_link"/>
+    <child link="upper_arm_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <!-- -Y makes positive servo angle move the vertical link toward -X. -->
+    <axis xyz="0 -1 0"/>
+    <limit lower="-1.570796327" upper="1.570796327" effort="20.0" velocity="0.436332"/>
+    <dynamics damping="0.35" friction="0.06"/>
+  </joint>
+
+  <link name="forearm_link">
+    <visual>
+      <origin xyz="0.090 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.180 0.035 0.035"/></geometry>
+      <material name="arm_blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0.090 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.180 0.035 0.035"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0.090 0 0" rpy="0 0 0"/>
+      <mass value="0.25"/>
+      <inertia ixx="0.000051042" ixy="0" ixz="0" iyy="0.000700521" iyz="0" izz="0.000700521"/>
+    </inertial>
+  </link>
+
+  <joint name="elbow_pitch_joint" type="revolute">
+    <parent link="upper_arm_link"/>
+    <child link="forearm_link"/>
+    <!-- Measured upper-arm pivot-to-pivot length: 180 mm. -->
+    <origin xyz="0 0 0.180" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-1.570796327" upper="1.570796327" effort="20.0" velocity="0.436332"/>
+    <dynamics damping="0.30" friction="0.05"/>
+  </joint>
+
+  <!--
+    A fixed 40 mm extension keeps the modeled camera pivot at the same
+    elbow-to-tip distance (180 + 40 = 220 mm) used by the real floor guard.
+    Camera pitch therefore changes aim, not the arm's kinematic endpoint.
+  -->
+  <link name="tool_offset_link">
+    <visual>
+      <origin xyz="0.020 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.040 0.030 0.030"/></geometry>
+      <material name="joint_silver"/>
+    </visual>
+    <collision>
+      <origin xyz="0.020 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.040 0.030 0.030"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0.020 0 0" rpy="0 0 0"/>
+      <mass value="0.08"/>
+      <inertia ixx="0.000012" ixy="0" ixz="0" iyy="0.000016667" iyz="0" izz="0.000016667"/>
+    </inertial>
+  </link>
+
+  <joint name="tool_offset_fixed_joint" type="fixed">
+    <parent link="forearm_link"/>
+    <child link="tool_offset_link"/>
+    <!-- Measured forearm length: 180 mm. -->
+    <origin xyz="0.180 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="camera_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.025 0.040 0.030"/></geometry>
+      <material name="camera_black"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.025 0.040 0.030"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.06"/>
+      <inertia ixx="0.0000125" ixy="0" ixz="0" iyy="0.000007625" iyz="0" izz="0.000011125"/>
+    </inertial>
+  </link>
+
+  <joint name="camera_pitch_joint" type="revolute">
+    <parent link="tool_offset_link"/>
+    <child link="camera_link"/>
+    <!-- Measured tool/camera offset: 40 mm beyond the forearm. -->
+    <origin xyz="0.040 0 0" rpy="0 0 0"/>
+    <!-- +Y makes positive Camera servo angle aim below the forearm. -->
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.570796327" upper="1.570796327" effort="4.0" velocity="0.872665"/>
+    <dynamics damping="0.08" friction="0.02"/>
+  </joint>
+
+  <!-- ROS/Isaac optical convention: +Z forward, +X right, +Y down. -->
+  <link name="camera_optical_frame"/>
+  <joint name="camera_optical_joint" type="fixed">
+    <parent link="camera_link"/>
+    <child link="camera_optical_frame"/>
+    <!-- Put the provisional lens origin beyond the 25 mm camera-body shell. -->
+    <origin xyz="0.020 0 0" rpy="-1.570796327 0 -1.570796327"/>
+  </joint>
+</robot>

@@ -1,0 +1,230 @@
+{
+  "schema": "arm-sim.model.v1",
+  "modelId": "desk_camera_arm_v0",
+  "description": "Primitive fixed-base four-axis simulation seed for the physical desk camera arm.",
+  "urdf": "../assets/desk_camera_arm.urdf",
+  "cameraProfile": "camera_profile.json",
+  "fixedBase": true,
+  "units": {
+    "length": "m",
+    "sourceLength": "mm",
+    "angle": "rad",
+    "sourceAngle": "deg",
+    "mass": "kg"
+  },
+  "evidenceBoundary": {
+    "measured": [
+      "joint identities and servo families",
+      "base pivot height",
+      "upper-arm length",
+      "forearm length",
+      "camera/tool offset",
+      "servo zero-angle kinematic convention",
+      "camera positive-angle direction",
+      "default floor keep-out plane"
+    ],
+    "provisional": [
+      "joint travel limits",
+      "joint effort and velocity limits",
+      "joint damping and friction",
+      "link cross-sections and collision shells",
+      "link masses, centers of mass, and inertias",
+      "camera body dimensions",
+      "camera intrinsics, lens distortion, optical center, and mount extrinsics",
+      "autofocus, depth of field, and focus convergence",
+      "contact and material parameters",
+      "drive gains",
+      "backlash, compliance, latency, and noise"
+    ],
+    "warning": "This asset is suitable for workflow integration and simulator prototyping. It is not a calibrated digital twin and its provisional limits are not physical safety limits."
+  },
+  "sourceEvidence": [
+    {
+      "path": "software/python/robot_gateway/simple_arm_api.py",
+      "symbols": [
+        "JOINT_IDS",
+        "JOINT_NAMES",
+        "BASE_HEIGHT_MM",
+        "UPPER_ARM_MM",
+        "DISTAL_MM",
+        "FLOOR_MM",
+        "SHOULDER_MODEL_OFFSET_DEGREES",
+        "ELBOW_MODEL_OFFSET_DEGREES",
+        "_scene_points"
+      ],
+      "use": "Measured geometry and the servo-to-model coordinate convention."
+    },
+    {
+      "path": "docs/HARDWARE.md",
+      "section": "Mechanical architecture",
+      "use": "Human-readable hardware geometry and camera-axis contract."
+    },
+    {
+      "path": "software/dashboard/src/arm/armTypes.ts",
+      "symbols": ["DEFAULT_GEOMETRY", "DEFAULT_FLOOR_MM"],
+      "use": "Independent frontend copy of the same dimensions; frontend -45/+45 calibration values were not adopted as physical limits because they are unverified defaults."
+    }
+  ],
+  "kinematics": {
+    "worldFrame": {
+      "axes": "x-forward, y-left, z-up",
+      "baseOrigin": "desk/floor contact under the Base axis"
+    },
+    "dimensionsMm": {
+      "basePivotHeight": 60.0,
+      "upperArm": 180.0,
+      "forearm": 180.0,
+      "toolOffset": 40.0,
+      "elbowToCameraPivot": 220.0,
+      "maximumPlanarReachFromShoulder": 400.0,
+      "defaultFloorKeepOut": 40.0
+    },
+    "dimensionsM": {
+      "basePivotHeight": 0.06,
+      "upperArm": 0.18,
+      "forearm": 0.18,
+      "toolOffset": 0.04,
+      "elbowToCameraPivot": 0.22,
+      "maximumPlanarReachFromShoulder": 0.40,
+      "defaultFloorKeepOut": 0.04
+    },
+    "zeroPose": {
+      "servoDegrees": {
+        "joint_1": 0.0,
+        "joint_2": 0.0,
+        "joint_3": 0.0,
+        "joint_4": 0.0
+      },
+      "elbowPositionM": [0.0, 0.0, 0.24],
+      "cameraPivotPositionM": [0.22, 0.0, 0.24],
+      "cameraDirection": "+x"
+    }
+  },
+  "links": {
+    "root": "world",
+    "fixedBase": "base_link",
+    "shoulderMount": "shoulder_mount_link",
+    "upperArm": "upper_arm_link",
+    "forearm": "forearm_link",
+    "toolOffset": "tool_offset_link",
+    "camera": "camera_link",
+    "cameraOptical": "camera_optical_frame"
+  },
+  "joints": [
+    {
+      "servoId": "joint_1",
+      "name": "base_yaw_joint",
+      "type": "revolute",
+      "axis": [0.0, 0.0, 1.0],
+      "lowerRad": -3.141592654,
+      "upperRad": 3.141592654,
+      "limitStatus": "provisional",
+      "servoToUrdf": "q_rad = radians(servo_degrees)",
+      "zeroMeaning": "forward work sector"
+    },
+    {
+      "servoId": "joint_2",
+      "name": "shoulder_pitch_joint",
+      "type": "revolute",
+      "axis": [0.0, -1.0, 0.0],
+      "lowerRad": -1.570796327,
+      "upperRad": 1.570796327,
+      "limitStatus": "provisional",
+      "servoToUrdf": "q_rad = radians(servo_degrees)",
+      "zeroMeaning": "upper arm straight up"
+    },
+    {
+      "servoId": "joint_3",
+      "name": "elbow_pitch_joint",
+      "type": "revolute",
+      "axis": [0.0, -1.0, 0.0],
+      "lowerRad": -1.570796327,
+      "upperRad": 1.570796327,
+      "limitStatus": "provisional",
+      "servoToUrdf": "q_rad = radians(servo_degrees)",
+      "zeroMeaning": "forearm forward when Shoulder is zero; +90 degrees is collinear upward"
+    },
+    {
+      "servoId": "joint_4",
+      "name": "camera_pitch_joint",
+      "type": "revolute",
+      "axis": [0.0, 1.0, 0.0],
+      "lowerRad": -1.570796327,
+      "upperRad": 1.570796327,
+      "limitStatus": "provisional",
+      "servoToUrdf": "q_rad = radians(servo_degrees)",
+      "zeroMeaning": "camera looks along forearm; positive aims down"
+    }
+  ],
+  "frames": {
+    "cameraSensorParent": "camera_optical_frame",
+    "cameraOpticalConvention": "+z forward, +x right, +y down",
+    "cameraOpticalFixedTranslationM": [0.020, 0.0, 0.0],
+    "cameraOpticalFixedRpyRad": [-1.570796327, 0.0, -1.570796327],
+    "kinematicEndpoint": "camera_pitch_joint origin",
+    "note": "The provisional optical frame sits 20 mm forward of the camera pivot so the lens is outside the modeled body. Parent the Isaac camera sensor there with zero local pose. Keep optical intrinsics in the scene/camera configuration, not in URDF."
+  },
+  "realSimCalibration": {
+    "status": "not_started",
+    "parameters": {
+      "world_T_base": {
+        "translationM": [0.0, 0.0, 0.0],
+        "rpyRad": [0.0, 0.0, 0.0],
+        "status": "scene_specific"
+      },
+      "jointZeroOffsetDeg": {
+        "joint_1": 0.0,
+        "joint_2": 0.0,
+        "joint_3": 0.0,
+        "joint_4": 0.0,
+        "status": "kinematic_convention_only_not_measured_mount_error"
+      },
+      "cameraExtrinsics": {
+        "translationM": null,
+        "rpyRad": null,
+        "status": "required_from_final_physical_mount"
+      },
+      "cameraIntrinsics": {
+        "widthPx": null,
+        "heightPx": null,
+        "fxPx": null,
+        "fyPx": null,
+        "cxPx": null,
+        "cyPx": null,
+        "distortionModel": null,
+        "coefficients": [],
+        "status": "required_from_installed_camera_per_capture_mode"
+      },
+      "jointLimitsDeg": {
+        "joint_1": [-180.0, 180.0],
+        "joint_2": [-90.0, 90.0],
+        "joint_3": [-90.0, 90.0],
+        "joint_4": [-90.0, 90.0],
+        "status": "provisional_simulation_envelope"
+      },
+      "jointDynamics": {
+        "backlashDeg": null,
+        "commandLatencyMs": null,
+        "arrivalNoiseStdDeg": null,
+        "stiffness": null,
+        "damping": null,
+        "status": "requires_real_trajectory_measurement"
+      },
+      "contact": {
+        "staticFriction": null,
+        "dynamicFriction": null,
+        "restitution": null,
+        "endpointCompliance": null,
+        "status": "requires_real_contact_trials"
+      }
+    },
+    "requiredBeforeDigitalTwinClaims": [
+      "Measure and import the live Pi joint bounds rather than copying fallback UI values.",
+      "Fit camera-to-arm extrinsics and desk plane from calibration targets.",
+      "Measure commanded-versus-observed joint trajectories, backlash, arrival latency, and repeatability.",
+      "Weigh or identify component masses and fit centers of mass/inertias.",
+      "Fit contact friction/compliance from repeatable harmless-object pushes.",
+      "Validate sim and real endpoint positions at multiple non-singular poses."
+    ]
+  }
+}

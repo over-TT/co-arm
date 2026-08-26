@@ -5,16 +5,19 @@ collision sensor, safety-rated device, or substitute for live joint telemetry.
 
 ## Reference camera behavior
 
-The current reference build uses a 5 MP OV5647-class camera at up to
-`2592 x 1944` for still capture. Its optics are **fixed-focus**: there is no lens
-actuator to command. The camera is physically mounted upside down, and the Pi
-configures horizontal plus vertical flip so newly delivered images are upright.
+The current reference build uses Raspberry Pi Camera Module 3 Wide. Its IMX708
+sensor exposes a 4608 x 2592 native array and powered autofocus. The bounded
+capture profiles use 2304 x 1296 for routine `survey` evidence and 4608 x 2592
+for `detail`. Survey prefers continuous normal/full-range focus; detail may
+request macro focus. The camera is physically mounted upside down, and the Pi
+applies one 180-degree transform so newly delivered images are upright.
 
-The provider reports camera focus capability on status/capture. If a future
-camera exposes autofocus controls, the provider can request supported
-continuous focus and macro range before starting the stream. A control request
-does not prove focus; the same capture must report valid AF state/lens metadata
-and show improved subject detail.
+The gateway checks the driver-reported sensor and array against the explicitly
+selected Wide profile; IMX708 alone cannot prove the lens variant. A focus
+control request does not prove the subject became sharp. Use the same capture's
+AF state/lens metadata together with visible fine detail in the subject region.
+The older OV5647 path remains a fixed-focus compatibility profile, not the
+current reference camera.
 
 ## Camera ray convention
 
@@ -93,8 +96,9 @@ Judge focus first from the subject region:
 `FocusFoM`, when present, is a relative same-frame libcamera metric. Compare it
 only for the same subject at similar framing. A whole-frame score can rise
 because the background is sharp while the target is not. Visible subject detail
-outranks the score. With fixed-focus optics, back away when a closer sample is
-visibly softer.
+outranks the score. For the current autofocus camera, require a settled AF
+state/lens position from the same frame; for the legacy fixed-focus profile,
+change standoff when a closer sample is visibly softer.
 
 ### 6. Repeat while evidence improves
 
@@ -131,7 +135,8 @@ identifiers belong in local calibration records, not the public generic guide.
   compare two deliberate captures or use monotonic capture age where available.
 - A successful shutter request followed by an image-load failure is different
   from a camera capture failure; report the failed stage.
-- If the camera reports fixed focus, do not call standoff search "autofocus."
+- If the active compatibility profile reports fixed focus, do not call
+  standoff search "autofocus."
 - If AF controls are merely configured, do not claim the lens focused.
 - If a survey token has expired from bounded retention, recapture instead of
   guessing its pixels.

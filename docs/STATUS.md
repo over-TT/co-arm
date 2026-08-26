@@ -1,100 +1,127 @@
 # Status and evidence
 
-Last documentation review: **2026-08-12**.
+Last public-source review: **2026-08-26**.
 
-This page reports evidence, not aspiration. Historical statements are dated;
-live state must always be refreshed before operating the arm.
+This page reports evidence, not aspiration. Historical hardware statements are
+dated. Nothing in the repository is fresh live state.
+
+## Current public source snapshot
+
+| Area | Included state | Evidence tier |
+| --- | --- | --- |
+| Dashboard | Standalone React/Vite Overview, guarded Control, bounded Live Follow, camera/calibration controls, Guide, Control Center, and SIM/REAL selection | Source inspection; 180 tests, the 42-module production build, and the high-severity dependency audit passed |
+| Local backend | Loopback-only FastAPI dashboard runtime, browser session boundary, Control Center, camera, and explicit SIM/REAL proxy routing | Source inspection; included in the 714-test Python run |
+| Pi gateway | Bearer authentication, four-joint state/calibration, floor guard, plan/apply/sequence, Live Follow, camera evidence, physical commissioning, and Arm HAT client | Source inspection; included in the 714-test Python run |
+| Arm MCP/plugin | Typed Arm tools, explicit SIM/REAL identity verification, structured MCP output, repo-local Codex marketplace, setup skill, and configured-arm runtime skill | 49 focused MCP/index tests passed; the plugin and both skills validated; credentials and installed MCP configuration are intentionally local |
+| Isaac Sim | Four-joint URDF/model, deterministic desk/camera scene, persistent bridge, simulator HTTP gateway, and supervised launcher | Source/contracts tested; URDF/JSON package resources passed an installed-wheel smoke; Isaac runtime and vendor assets are not bundled |
+| Arm HAT | `arm-hat-2.7.2` ESP32 controller source, shared library, and protocol fixtures | 17 host tests passed; device build/flash remains a separate tier |
+| Operations | Pi service templates, deployment, reversible physical-UART mode control, status, backup/restore/imaging, firmware compile helper, and Isaac launcher | Source/contracts tested; six retained PowerShell scripts parsed |
+| Printable parts | All 12 current printed parts: both Base gears, the Base stack, arm links, servo mounts/covers, and camera holder/cover | Files inspected; final print settings are not included |
+
+Current export-worktree verification completed on 2026-08-26:
+
+- gateway, backend, MCP, Isaac contract, deployment/recovery, and source tests:
+  **714 passed**, plus **9 nested subtests**; four upstream Starlette
+  deprecation warnings remain visible;
+- dashboard: **180 passed**, followed by a successful TypeScript/Vite
+  production build with 42 modules transformed;
+- an isolated PEP 517 build produced and cleanly installed the
+  `co_arm_stack-0.1.0-py3-none-any.whl` artifact; `pip check` and a
+  source-isolated smoke loaded the packaged simulator URDF/JSON, confirmed test
+  suites were excluded, and confirmed that the dashboard CLI exits honestly
+  when the separately built frontend assets are absent;
+- no-gateway dashboard smoke: HTML plus both generated assets returned 200,
+  the browser session issued a bounded action token, zero arm backends were
+  configured, and the fixed Control Center manifest loaded;
+- Arm HAT host/protocol suite: **17 passed**;
+- all **6** retained PowerShell operations scripts parsed without syntax
+  errors;
+- the `co-arm` plugin manifest and marketplace validated, and both setup and
+  runtime skills passed their skill validators;
+- the exact Python lock, Raspberry Pi requirements, and complete dashboard
+  dependency graph returned no known vulnerabilities from their current audit
+  services;
+- the source manifest is current across **151 software files**, and the
+  repository checker reviewed **225 files** with only the documented missing
+  license and approved-media warnings. The earlier missing-CAD warning is gone
+  because all 12 current 3MF files are now included.
+
+The checked-in GitHub workflow now repeats the source, test, build, package,
+PowerShell, and dependency-audit gates, and Dependabot covers Python, Raspberry
+Pi requirements, pnpm, and GitHub Actions. A GitHub-hosted run still requires
+the exact candidate to be pushed; local inspection does not prove that remote
+run.
+
+The deterministic manifest and repository checker are the final tree-level
+gate after any edit. These checks prove only the exported source and local build
+environment; they do not prove a deployed service, Isaac runtime, flashed
+controller, or physical arm. Re-run them for the exact commit being published.
+
+## Agent-guided setup boundary
+
+`AGENTS.md`, `docs/SETUP_WITH_CODEX.md`, `software/SOURCE_INDEX.json`, and the
+repo-local setup skill give an agent an ordered path through checkout validation,
+dashboard startup, Isaac setup, blank-Pi prerequisites, gateway deployment,
+firmware compilation, tunnel/MCP configuration, commissioning, and operation.
+
+That path is complete for source validation and is actionable for a supplied
+Isaac installation or an existing physical arm. A reproducible new mechanical
+build is now partly documented by all 12 printable parts. It still needs the
+bearing details, full fastener and print schedule, as-built wiring/pinout, and
+power details before it becomes a complete copy-and-build package.
 
 ## Current reference-build contract
 
-| Area | Current documented state | Evidence tier |
+| Area | Reference state | Evidence boundary |
 | --- | --- | --- |
-| Mechanism | Four driven joints: Base, Shoulder, Elbow, Camera | Source plus physical observations |
-| Kinematics | Camera is auxiliary; Shoulder/Elbow form the planar IK chain | Source and geometry tests |
-| Base | ST3215/STS, 4:1 external gearing, native Mode-0 signed absolute goals | Register readback plus operator motion acceptance |
-| Shoulder / Elbow | ST3215/STS-family path | Source and live bus observations |
-| Camera joint | SC09/SCS-family path, separate byte order and scale | Source tests plus live bus observations |
-| Vision | OV5647 fixed-focus 2592 x 1944 still capture, delivered upright | Source tests plus real image capture |
-| Firmware | `arm-hat-2.4.0`; advertises `multi_turn_absolute_v1` | Flash identity and live protocol evidence |
-| Pi gateway | Authentication, state, camera, calibration, floor geometry, plan/apply | Source tests and deployed endpoint evidence |
-| Codex tools | Nine bounded typed tools | Schema/source verification; individual physical proofs vary |
-| Named overview | One Base-0 wide desk view was operator-confirmed from pixels | Image and operator evidence; not current-pose evidence |
+| Mechanism | Four driven joints: Base, Shoulder, Elbow, Camera | Source plus earlier physical observation |
+| Geometry | 60 mm pivot, 180 mm upper arm, 220 mm elbow-to-tip | Configured/measured reference values, not manufacturing tolerances |
+| Gateway | Raspberry Pi 4, Camera Module 3 Wide / IMX708, ESP32 Arm HAT | Source plus dated deployed evidence |
+| Base | ST3215/STS plus 3D-printed 52:13 gear pair for 4:1 reduction; native Mode-0 signed absolute goals | Owner-supplied Base 3MF metadata plus earlier register readback and physical motion acceptance |
+| Shoulder / Elbow | ST3215/STS-family path; grouped bounded Live Follow available | Source plus dated unloaded physical runs |
+| Camera joint | SC09/SCS-family path, excluded from endpoint IK | Source tests plus earlier bus/motion observations |
+| Vision | 2304 x 1296 survey and 4608 x 2592 detail profiles | Source plus dated deployed capture/status evidence |
 
-## Latest read-only live snapshot
+## Previously recorded reference-arm evidence
 
-On 2026-08-12, a read-only `arm_state` call reported:
+These facts were recorded on the private reference system before this public
+export. They are historical device evidence, not live verification made from
+this checkout:
 
-- controller connection online;
-- servo bus online;
-- STOP clear and collision flag clear;
-- the floor guard enabled at 40 mm;
-- all four joint endpoints online;
-- no measured Base angle.
+- The Pi, Camera Module 3 Wide, Arm HAT, and four servo IDs operated together.
+- Native Base extended-position configuration and signed motion were read back
+  and physically exercised after the earlier Mode-3 path was retired.
+- Camera Module 3 Wide reported the IMX708 sensor/array and delivered upright
+  survey/detail captures with powered autofocus controls. Focus still requires
+  same-capture AF metadata plus visible subject detail.
+- On 2026-08-23, matching Arm HAT `2.7.2`, Pi, and dashboard code completed
+  unloaded Shoulder/Elbow Live Follow runs at raw speed `2400`, acceleration
+  `50`, and a `±90 deg` start-relative allowance for five and twelve seconds.
+- The twelve-second run recorded 223 accepted input frames, 52 verified grouped
+  dispatches, 89 heartbeats, and an orderly client release.
 
-Because the Base angle was unavailable, that snapshot does **not** prove a
-complete current pose or trusted Base coordinate. No move, release, plan apply,
-capture, deployment, restart, or firmware action occurred during the snapshot.
+That Live Follow evidence proves only the tested unloaded path. Raw speed is not
+degrees per second, acceleration `50` is the installed-servo policy limit, and
+the run does not establish every pose, load, overshoot, collision, cable, power,
+or thermal condition.
 
-## Physically verified
+## Still requiring live/device/operator proof
 
-- The Pi, camera, HAT, and four servo IDs have operated together.
-- The Base servo's native extended-position configuration was read back with
-  Phase extended-position bit enabled, resolution 1, zero angle limits, Mode 0,
-  EEPROM locked, and torque off.
-- Firmware 2.4.0 and the matching Pi control path survived a complete stack
-  power cycle.
-- Normal Base zero, positive, negative, and return motion was accepted by the
-  operator on 2026-08-10.
-- Codex has previously moved joints through typed tools and captured real
-  camera pixels.
-- The OV5647 delivered a full-resolution still and correctly reported that it
-  has fixed-focus optics.
-- A Base-0 wide overview was confirmed from the returned image.
+- An installed Isaac Python launcher, compatible GPU/driver stack, and a passing
+  bridge/camera self-test; Isaac was not launched during this source review.
+- Arduino CLI/ESP32-core compilation, upload, readback, and installed firmware
+  identity; Arduino CLI was unavailable during this review.
+- Pi deployment, service restart/hold behavior, loopback tunnel, camera, UART,
+  controller, bus, and servo state on the target machine.
+- Fresh STOP, torque, Base-continuity, calibration, telemetry, measured arrival,
+  floor-clearance, cable/obstacle, power-sag, current, thermal, and stall checks.
+- Remaining CAD and drawings; bearing details; fasteners; materials and print
+  settings; as-built wiring/pinout; power details; and reviewed public media.
 
-## Source/test verified, but not yet physical proof
+## Distribution boundary
 
-- One-use plan preview and apply checks, including expiry, replay, telemetry
-  freshness, start-pose drift, limits, and swept floor clearance.
-- The corrected independently timed Shoulder/Elbow sweep calculation.
-- Autofocus capability detection and per-frame metadata handling for a future
-  motorized camera; the installed OV5647 cannot exercise this.
-- The current dashboard Camera-tab behavior and its error states.
-- Most gateway, firmware, MCP, and UI contracts under simulation or replay.
-
-## Open physical gates
-
-- Record a numeric Base arrival table across signed moves, seam crossings,
-  endpoints, repeated targets, and mid-flight retargets on the final 2.4 path.
-- Prove the final path over a longer coordinated reliability run.
-- Physically measure the corrected floor-guard clearance model.
-- Exercise `arm_plan` followed by `arm_apply_plan` on hardware and record
-  measured arrival.
-- Confirm a real production-dashboard Camera-tab click.
-- Qualify servo-rail sag, current scaling, stall behavior, thermal envelope,
-  and simultaneous-load limits.
-- Confirm whether a dedicated physical emergency power cut is installed.
-- Photograph exact servo, HAT, camera, and power-supply labels.
-- Add CAD, STL, drawings, fastener inventory, materials, and print settings.
-
-## Automated checks at export time
-
-These checks ran against the private parent workspace during the export audit.
-They are useful source evidence, but are not clean-checkout evidence for this
-documentation repository and are not live-hardware proof.
-
-| Check | Result | Scope note |
-| --- | ---: | --- |
-| Canonical Arm source-index validator | 32 paths passed | Parent source map |
-| Raspberry Pi gateway tests | 261 passed | Focused `robot_gateway` suite |
-| Arm MCP tests | 49 passed | Focused MCP compatibility suite |
-| Arm HAT firmware host tests | 15 passed | Protocol/runtime host harness |
-| Arm frontend tests | 158 passed across 10 files | Arm components inside the parent app |
-| TypeScript project build | Passed | Whole parent application |
-| Production frontend build | Passed | Whole parent application |
-| Broad combined Python run | 492 passed, 2 failed | Not a green aggregate result |
-
-The two broad-run failures were one order-sensitive legacy physical-arm API
-expectation and one persistent embedded-memory context-size expectation. They
-do not invalidate this documentation package, but they prevent a green parent
-aggregate claim. A source release must run and pass its own allowlisted tests
-from a fresh clean checkout.
+No license has been selected, so public reuse terms are not granted. Runtime
+state, captures, private reports, credentials, backups, toolchains, installed
+agent configuration, and unrelated workspace code are intentionally absent.
+The dashboard contains no embedded agent runtime; agent operation uses the
+external MCP server/plugin with machine-local configuration.

@@ -1,156 +1,87 @@
-# Assembly and commissioning record
+# Assembly
 
-This is a documentation-first assembly workflow for co-arm. It is not yet a
-validated step-by-step reproduction manual because the native CAD, complete
-BOM, fastener schedule, wiring drawings, print settings, and build photographs
-have not been supplied. Preserve the order below while replacing every marked
-gap with as-built evidence.
+This is the current build order for co-arm. The 12 printed parts are in
+[`hardware/3mf/`](../hardware/3mf/).
 
-## Before disassembly or rebuilding
+## What goes into the build
 
-Capture the existing arm first:
+- Raspberry Pi 4 and Camera Module 3 Wide;
+- Waveshare Bus Servo Driver HAT (A);
+- three ST3215/STS-family servos and one SC09/SCS-family camera servo;
+- the 12 printed parts;
+- one large Base bearing;
+- heat-set inserts, M3 screws, servo horns, washers, spacers, and cable ties.
 
-- overall photos from front, rear, left, right, top, and a 45-degree view;
-- close photos of every servo label, controller label, regulator, power supply,
-  connector, gear mesh, bearing/shaft retention, and base anchoring;
-- a slow video around the unpowered arm showing cable routing;
-- photos of every joint at its physical zero mark;
-- a ruler/caliper reference in dimension photos where practical.
+The exact bearing details, insert list, screw lengths, and print settings are
+still being added.
 
-Do not publish private network labels, account details, keys, QR codes, home
-interiors beyond the intended crop, or serial numbers you do not want public.
+## 1. Build the Base
 
-## Tools and consumables
+1. Start with `co-arm_base_main-body_r01.3mf`. The large Base gear is
+   already part of this print.
+2. Put `co-arm_base_bearing-bottom_r01.3mf` underneath the large bearing.
+3. Fit the bearing into the Base.
+4. Put `co-arm_base_shaft-base_r01.3mf` on top of the bearing.
+5. Fit the lower-arm servo and
+   `co-arm_shoulder_servo-mount_r01.3mf` before bolting
+   `co-arm_base_level-2-platform_r01.3mf` to the Shaft Base.
+6. Fit `co-arm_base_servo-gear_r01.3mf` to the Base servo and mesh it with the
+   large gear. Turn the Base by hand and make sure it moves without a tight
+   spot.
 
-The exact tool list is not yet known.
+The two printed gears make the 4:1 Base reduction. They are part of the arm,
+not temporary test pieces.
 
-- **TODO (owner verification):** driver/hex sizes, spanners, torque tools,
-  calipers, thread-locking compound, lubricant, cable ties, heat-shrink, and
-  electrical test equipment actually used.
-- **TODO (owner verification):** note where thread locker must or must not be
-  used, especially near plastic, bearings, and serviceable joints.
+## 2. Build the arm
 
-## Provisional mechanical assembly order
+1. Attach `co-arm_shoulder_lower-link_r01.3mf` to the lower-arm servo.
+2. Fit the next servo at the top of the lower link.
+3. Attach `co-arm_elbow_upper-link_r01.3mf`.
+4. Close the top-servo area with
+   `co-arm_elbow_servo-cover_r01.3mf`.
 
-Keep all actuators unpowered and support each link during assembly.
+With torque off, the Shoulder and Elbow can sag. Hold the link or rest it on
+something before releasing torque.
 
-1. **Prepare printed and purchased parts.** Check part revision, remove support
-   material, inspect holes and layer lines, and test inserts without forcing
-   them. Record any drilling, reaming, tapping, or heat-set operation.
-2. **Build and anchor the Base.** Install the output support, bearings/bushings,
-   shaft/hub, driven gear, motor pinion, and motor mount according to the future
-   assembly drawing. Confirm the recorded 4:1 ratio from tooth counts before
-   closing the housing.
-3. **Set Base gear mesh.** It should rotate through the intended mechanical
-   range without binding. Record backlash and axial retention. Do not enable the
-   motor to overcome a tight mesh.
-4. **Install the Shoulder.** Attach the shoulder actuator and upper link while
-   the link is supported. Establish the shoulder zero-reference planes before
-   tightening the output horn/hub.
-5. **Install the Elbow.** Attach the distal link and establish the elbow
-   zero-reference posture. Confirm 180 mm shoulder-to-elbow and 220 mm
-   elbow-to-tip model dimensions using pivot centres, not case edges.
-6. **Install the camera axis and module.** Mount the camera servo and bracket,
-   then the OV5647 module. The current camera is physically inverted and the
-   software rotates images 180 degrees; document the lens-facing direction in a
-   drawing.
-7. **Route cables.** Leave a service loop at every moving joint. Move the arm by
-   hand through its intended range and verify no cable becomes taut, pinched,
-   scraped, or able to enter a gear.
-8. **Mount the Raspberry Pi and HAT.** Preserve access to connectors, airflow,
-   status indicators, storage, and the servo-bus/service connections.
-9. **Apply witness marks and labels.** Label Base/Shoulder/Elbow/Camera, servo
-   IDs 1-4, cable ends, power domains, polarity, and mechanical zero marks.
+## 3. Build the camera end
 
-Exact fasteners, tightening torques, fit classes, gear clearances, and part
-orientation are **TODO (owner verification)** and must be added to drawings
-before this becomes a repeatable assembly procedure.
+1. Mount `co-arm_camera_servo-mount_r01.3mf` at the end of the upper link.
+2. Put the camera servo inside it.
+3. Attach `co-arm_camera_holder_r01.3mf` to the servo.
+4. Put the Camera Module 3 Wide in the holder.
+5. Close it with `co-arm_camera_cover_r01.3mf`.
 
-## Electrical assembly order
+## 4. Wire it
 
-1. Mechanically support the arm so loss of torque cannot drop a link.
-2. Leave all external power disconnected.
-3. Verify the Raspberry Pi and HAT orientation and all jumper/switch positions
-   against the exact board revision.
-4. Trace the power distribution from source to each load and complete the
-   schematic before energizing it.
-5. Verify connector pinout and polarity from the mating-face view and again at
-   the wire-side harness.
-6. Verify any step-down/regulator output without a servo connected.
-7. Connect and identify one previously uncommissioned bus servo at a time.
-   Prevent duplicate bus IDs; reserve 1/2/3/4 for Base/Shoulder/Elbow/Camera.
-8. Reassemble the shared bus only after each servo is labeled with its confirmed
-   ID and voltage.
-9. Check continuity, shorts, ground references, cable strain relief, and fuse or
-   protection placement.
-10. First-power each domain independently with an appropriate current limit and
-    no commanded motion.
+The basic chain is:
 
-The candidate 12 V, 7.5 A supply is not approved until its exact model,
-polarity, harness ratings, fusing, regulator path, and measured margins are
-recorded. Do not assume the camera servo accepts 12 V.
+```text
+Camera -> Raspberry Pi
+Raspberry Pi -> ESP32 Arm HAT
+Arm HAT -> four serial servos
+```
 
-## First mechanical checks after wiring
+Use servo IDs `1 / 2 / 3 / 4` for Base, Shoulder, Elbow, and Camera. Leave
+enough cable slack for every joint to move without pulling or entering the Base
+gears. The final wiring diagram and power details are still being added; see
+[`ELECTRONICS.md`](ELECTRONICS.md) for the current notes.
 
-Before enabling torque:
+## 5. First setup
 
-- base anchored and work area clear;
-- links supported against gravity;
-- all fasteners present and witness-marked where useful;
-- gears, horns, shafts, and bearings retained;
-- cables clear through the full hand-moved range;
-- correct logical ID returned for each isolated actuator;
-- controller communications healthy;
-- supply voltage stable and polarity correct;
-- hardware disconnect/E-stop behavior known;
-- software STOP clear only when intentionally beginning commissioning.
+1. Move every joint by hand and check the gears, cables, and hard stops.
+2. Mark the physical Base zero.
+3. Power and test one servo at a time.
+4. Check its ID, direction, and a small move before moving on.
+5. Test Base, Shoulder, Elbow, then Camera.
+6. Only then try a slow coordinated move.
 
-## Commission one axis at a time
+Continue with [`COMMISSIONING.md`](COMMISSIONING.md) for the software setup and
+joint calibration.
 
-1. Start with the arm mechanically supported and the other axes unable to make
-   an unexpected movement.
-2. Read the live servo identity/position before commanding anything.
-3. Verify the physical zero mark and direction using a deliberately small,
-   bounded move.
-4. Verify measured arrival; a requested target is not proof that the joint
-   moved there.
-5. Record comfortable software limits inside physical hard stops and cable
-   limits.
-6. Remove torque and confirm the link's gravity behavior before moving to the
-   next axis.
-7. Repeat for Base, Shoulder, Elbow, then Camera.
-8. Only after the four individual axes are documented should coordinated motion
-   be tested at low speed with clearance monitoring.
+## Still to add
 
-The Base's 4:1 reduction makes output position continuity especially important.
-After a true continuity loss, align the physical Base-zero mark and deliberately
-re-establish zero; do not infer output turns from one single-turn reading.
-
-## Assembly evidence to add later
-
-Place media in the repository's media folders and use descriptive captions. A
-useful minimum set is:
-
-- `media/photos/overview/` — completed arm and scale/context views;
-- `media/photos/details/` — labels, gears, joints, controller, power, and
-  connectors;
-- `media/photos/assembly/` — one photo per meaningful assembly step;
-- `media/video/` — short mechanism, cable-routing, and controlled-motion clips.
-
-For each assembly photo, note the matching part revision and step. Avoid
-embedding huge original videos in Git history without deciding on repository
-size policy; a hosted link plus a small poster/preview may be preferable.
-
-## Completion gate for a reproducible build
-
-The assembly guide is not complete until all of the following exist:
-
-- exact BOM with supplier/manufacturer identifiers;
-- released native CAD, STEP, STL, and dimensioned drawings;
-- fastener and purchased-hardware schedule;
-- confirmed material and print profile per printed part;
-- complete power schematic and point-to-point wiring/harness drawing;
-- confirmed supply margins, fusing/protection, and emergency isolation;
-- labelled assembly photos and a revision-matched build sequence;
-- axis-by-axis zero, direction, limits, and first-motion checks;
-- a final as-built verification against the released revision.
+- large bearing details;
+- heat-set insert and M3 screw list;
+- print settings;
+- final wiring and power diagram;
+- step-by-step assembly photos.

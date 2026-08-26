@@ -9,6 +9,7 @@ folders already exist so files can be added without redesigning the tree.
 | --- | --- | --- |
 | Editable/native CAD assembly and parts | `hardware/cad/native/` | Keep the main assembly and its external references together |
 | Neutral CAD for reuse | `hardware/cad/step/` | Export STEP AP242 or AP214 in millimetres |
+| Printable 3MF parts | `hardware/3mf/` | Use the clean part names already established there |
 | Slicer-ready meshes | `hardware/stl/print-ready/` | One oriented binary STL per printable part, in millimetres |
 | Dimensioned drawings | `hardware/drawings/` | PDF plus DXF when useful |
 | Exact parts and quantities | `hardware/bom/bom.csv` | Replace TODO rows; do not invent supplier IDs |
@@ -26,7 +27,8 @@ Read [`CAD_AND_STL.md`](CAD_AND_STL.md) before exporting geometry and
 
 ## Minimum useful CAD package
 
-For each printable revision, add:
+All 12 current printed parts are now in `hardware/3mf/`. To finish the
+mechanical package, add:
 
 1. the editable assembly and part sources;
 2. a full neutral STEP assembly;
@@ -83,5 +85,5 @@ is still required.
 
 Before the first public release, answer the items in
 [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md). The critical ones are repository
-visibility, public attribution, software scope, license split, and CAD
-provenance.
+visibility, public attribution, license split, and CAD provenance. The ARM-only
+software scope is now recorded in `SOURCE_RELEASE_PLAN.md`.

@@ -1,0 +1,271 @@
+.simplearm {
+  --arm-cyan: #83c4dc;
+  --arm-cyan-dim: #17313c;
+  --arm-steel: #c7d2da;
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.simplearm-bar { align-items: center; border-bottom: 1px solid var(--divider); display: flex; flex: none; gap: 16px; justify-content: space-between; padding: 12px 18px; }
+.simplearm-bar strong { display: block; font-size: .95rem; }
+.simplearm-bar span { color: var(--text-muted); font: .64rem "Cascadia Code", monospace; }
+.simplearm-controller { display: block; margin-top: 2px; }
+.simplearm-controller b { font: inherit; }
+.simplearm-controller .is-v3 { color: #78b993; }
+.simplearm-controller .is-upgrade { color: var(--warning); }
+.simplearm-bar-actions { display: flex; gap: 8px; }
+.simplearm-bar-actions button { font-size: .66rem; min-height: 34px; padding: 5px 12px; }
+.simplearm-stop { background: #7a2530; border-color: #b8434f; color: #ffd9dc; font-weight: 700; letter-spacing: .06em; }
+/* Lit when the plane is being enforced, matching the keep-out band drawn in the
+   2D scene so the button and the barrier read as the same thing. */
+.simplearm-floorguard.is-active { background: #43241c; border-color: #ff6b4a; color: #ffcfc2; }
+
+.simplearm-note { align-items: center; border-left: 2px solid var(--warning); color: var(--text-soft); display: flex; flex: none; font-size: .72rem; gap: 10px; margin: 0; padding: 9px 18px; }
+.simplearm-note[role="alert"] { background: #1c1214; border-left-color: #b8434f; }
+.simplearm-note button { flex: none; font-size: .62rem; min-height: 28px; padding: 3px 10px; }
+
+/* Viewport takes the space, joints take what they need. min-height:0 is what
+   lets the viewport shrink instead of pushing the page into a scrollbar. */
+.simplearm-body { display: grid; flex: 1 1 auto; grid-template-columns: minmax(0, 1fr) minmax(360px, 440px); min-height: 0; }
+.simplearm-body > :first-child { min-height: 0; min-width: 0; }
+.simplearm-stage { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.simplearm-stage > .arm2d,
+.simplearm-stage > .arm-viewport,
+.simplearm-stage > .simplearm-pose-unavailable { min-height: 0; }
+.simplearm-viewtabs { display: flex; flex: none; gap: 4px; padding: 12px 17px 0; }
+.simplearm-viewtabs button { background: #11171c; border: 1px solid var(--divider); border-radius: 4px; color: var(--text-muted); font-size: .68rem; letter-spacing: .04em; min-height: 30px; padding: 4px 13px; }
+.simplearm-viewtabs button.is-active { background: var(--arm-cyan-dim); border-color: #416b7d; color: var(--arm-cyan); }
+.simplearm-pose-unavailable { align-content: center; background: #0b1014; border: 1px solid #26323b; display: grid; flex: 1 1 auto; gap: 8px; justify-items: center; margin: 15px 17px 10px; padding: 28px; text-align: center; }
+.simplearm-pose-unavailable strong { color: var(--text-soft); font-size: 1rem; }
+.simplearm-pose-unavailable span { color: var(--text-muted); font-size: .74rem; line-height: 1.5; max-width: 36rem; }
+.simplearm-pose-unavailable small { color: var(--warning); font-size: .64rem; line-height: 1.45; }
+.simplearm-plan { align-items: start; background: #0b1115; border-top: 1px solid #26343d; display: grid; flex: none; gap: 10px 16px; grid-template-columns: minmax(13rem, .75fr) minmax(0, 1.5fr) auto; padding: 10px 17px 12px; }
+.simplearm-plan.is-ready { border-top-color: #416b7d; box-shadow: inset 0 2px 0 #17313c; }
+.simplearm-plan.is-error { border-top-color: #8f3d47; }
+.simplearm-plan-heading { display: grid; gap: 4px; }
+.simplearm-plan-heading > div { align-items: baseline; display: flex; gap: 8px; }
+.simplearm-plan-heading strong { color: var(--text-soft); font-size: .76rem; }
+.simplearm-plan-heading span { color: var(--arm-cyan); font: .58rem "Cascadia Code", monospace; letter-spacing: .05em; text-transform: uppercase; }
+.simplearm-plan-heading p { color: var(--text-muted); font-size: .64rem; line-height: 1.4; margin: 0; }
+.simplearm-motion-mode { display: flex; gap: 4px; }
+.simplearm-motion-mode button { background: #11171c; border-color: var(--divider); color: var(--text-muted); font-size: .6rem; min-height: 30px; padding: 3px 9px; }
+.simplearm-motion-mode button[aria-pressed="true"] { background: var(--arm-cyan-dim); border-color: #416b7d; color: var(--arm-cyan); }
+.simplearm-plan-details { display: grid; gap: 5px; }
+.simplearm-plan-details dl { display: flex; flex-wrap: wrap; gap: 5px 12px; margin: 0; }
+.simplearm-plan-details dl > div { display: flex; gap: 5px; }
+.simplearm-plan-details dt { color: var(--text-muted); font-size: .6rem; }
+.simplearm-plan-details dd { color: var(--text-soft); font: 600 .62rem "Cascadia Code", monospace; margin: 0; }
+.simplearm-plan-details dd span { color: var(--arm-cyan); }
+.simplearm-plan-tip, .simplearm-plan-clearance { color: var(--text-muted); display: flex; font: .6rem "Cascadia Code", monospace; gap: 12px; margin: 0; }
+.simplearm-plan-clearance.is-warning { color: var(--warning); }
+.simplearm-plan-warnings { color: var(--warning); display: grid; font-size: .62rem; gap: 2px; margin: 0; padding-left: 16px; }
+.simplearm-plan-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.simplearm-plan-actions button { font-size: .66rem; min-height: 44px; padding: 5px 13px; }
+.simplearm-plan-actions button:disabled { cursor: not-allowed; opacity: .38; }
+.simplearm-plan-actions .simplearm-plan-apply { background: var(--arm-cyan-dim); border-color: #416b7d; color: var(--arm-cyan); font-weight: 700; }
+.simplearm-plan-actions > span { color: var(--text-muted); flex-basis: 100%; font: .56rem "Cascadia Code", monospace; text-align: right; }
+.simplearm-plan.is-sequence { grid-template-columns: minmax(14rem, .65fr) minmax(0, 1.8fr) auto; }
+.simplearm-plan.is-sequence.is-complete { border-top-color: #4f8f6a; }
+.simplearm-sequence-details { display: grid; gap: 6px; min-width: 0; }
+.simplearm-sequence-list { display: grid; gap: 4px; list-style: none; margin: 0; max-height: 180px; overflow-y: auto; padding: 0 2px 0 0; }
+.simplearm-sequence-list > li { align-items: center; border-left: 2px solid #314651; display: grid; gap: 5px 8px; grid-template-columns: 24px minmax(12rem, 1fr) auto auto auto; min-width: 0; padding: 4px 6px; }
+.simplearm-sequence-list > li.is-editing { background: #101a20; border-left-color: var(--arm-cyan); }
+.simplearm-sequence-index { align-items: center; background: var(--arm-cyan-dim); border: 1px solid #416b7d; border-radius: 50%; color: var(--arm-cyan); display: inline-flex; font: 700 .58rem "Cascadia Code", monospace; height: 22px; justify-content: center; width: 22px; }
+.simplearm-sequence-pose { color: var(--text-soft); font: .58rem/1.4 "Cascadia Code", monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.simplearm-sequence-list > li > span:nth-child(3) { color: var(--text-muted); font: .56rem "Cascadia Code", monospace; white-space: nowrap; }
+.simplearm-sequence-list .is-warning { color: var(--warning); }
+.simplearm-sequence-result { color: var(--text-muted); font: 700 .56rem "Cascadia Code", monospace; text-transform: uppercase; }
+.simplearm-sequence-result.is-arrived { color: #78b993; }
+.simplearm-sequence-result.is-failed, .simplearm-sequence-result.is-stopped { color: #e4848d; }
+.simplearm-sequence-timing, .simplearm-sequence-overall { color: var(--text-muted); font: .55rem "Cascadia Code", monospace; margin: 0; }
+.simplearm-sequence-timing { grid-column: 2 / 5; }
+.simplearm-sequence-row-actions { display: flex; gap: 3px; grid-column: 5; grid-row: 1 / span 2; }
+.simplearm-sequence-row-actions button { font-size: .58rem; min-height: 34px; min-width: 34px; padding: 3px 7px; }
+.simplearm-sequence-row-actions button:focus-visible, .simplearm-motion-mode button:focus-visible { border-color: var(--arm-cyan); outline: 2px solid var(--arm-cyan); outline-offset: 1px; }
+.simplearm-sequence-row-actions button:disabled { cursor: not-allowed; opacity: .36; }
+.simplearm-joints { border-left: 1px solid var(--divider); display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; padding: 14px; }
+
+.simplearm-joint { border: 1px solid var(--divider); display: grid; gap: 9px; padding: 11px 12px; }
+.simplearm-joint.is-selected { border-color: var(--arm-cyan); }
+.simplearm-joint.is-free { border-left: 2px solid var(--warning); }
+.simplearm-joint > header { align-items: center; display: flex; gap: 10px; }
+.simplearm-joint > header strong { font-size: .88rem; }
+.simplearm-joint > header output { color: var(--arm-cyan); font: 700 1.15rem "Cascadia Code", monospace; margin-left: auto; }
+
+/* Cached proof only: this strip never owns a control or initiates a read. Mode
+   0 is the healthy free-encoder state, so it uses cyan instead of fault amber. */
+.simplearm-truth { align-items: center; background: #0d1418; border-left: 2px solid #6a7780; color: var(--text-muted); display: flex; flex-wrap: wrap; font: .58rem "Cascadia Code", monospace; gap: 4px 9px; padding: 5px 7px; }
+.simplearm-truth strong { color: #c9d2d7; font: 700 .6rem "Cascadia Code", monospace; letter-spacing: .06em; }
+.simplearm-truth span { white-space: nowrap; }
+.simplearm-truth.is-trusted { border-left-color: #4f8f6a; }
+.simplearm-truth.is-trusted strong { color: #78b993; }
+.simplearm-truth.is-unknown { border-left-color: #8c7442; }
+.simplearm-truth.is-unknown strong { color: var(--warning); }
+.simplearm-truth.is-resync { background: #1c1214; border-left-color: #b8434f; }
+.simplearm-truth .is-mode-free { color: var(--arm-cyan); }
+
+/* The Base used to make the operator hunt through calibration rows for the one
+   recovery action, then type every verification angle by hand. Keep that raw
+   layer below, but make the normal zero -> test loop one obvious control. */
+.simplearm-base-self { background: #0b1115; border: 1px solid #26343d; display: grid; gap: 8px; padding: 8px; }
+.simplearm-base-self.is-home { border-color: #66512a; }
+.simplearm-base-self.is-ready { border-color: #315d45; }
+.simplearm-base-home { align-items: center; display: flex; gap: 10px; justify-content: space-between; }
+.simplearm-base-home > div { display: grid; gap: 2px; min-width: 0; }
+.simplearm-base-home span,
+.simplearm-base-presets > span { color: var(--text-muted); font-size: .58rem; letter-spacing: .06em; text-transform: uppercase; }
+.simplearm-base-home strong { color: var(--text-soft); font-size: .72rem; }
+.simplearm-base-home-button { background: var(--arm-cyan-dim); border-color: #416b7d; color: var(--arm-cyan); flex: none; font-size: .66rem; font-weight: 700; min-height: 44px; padding: 5px 11px; }
+.simplearm-base-home-button:disabled { cursor: not-allowed; opacity: .4; }
+.simplearm-base-presets { display: grid; gap: 5px; }
+.simplearm-base-presets > div { display: grid; gap: 5px; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.simplearm-base-presets button { background: #11191f; border: 1px solid var(--divider); color: var(--text-soft); font: 700 .67rem "Cascadia Code", monospace; min-height: 44px; min-width: 0; padding: 4px 2px; }
+.simplearm-base-presets button:hover:not(:disabled) { border-color: var(--arm-cyan); color: var(--arm-cyan); }
+.simplearm-base-presets button:active:not(:disabled) { transform: translateY(1px); }
+.simplearm-base-presets button:disabled { cursor: not-allowed; opacity: .3; }
+.simplearm-base-range-fix { align-items: center; background: #251f14; border-left: 2px solid var(--warning); display: flex; font-size: .62rem; gap: 8px; justify-content: space-between; padding: 6px 7px; }
+.simplearm-base-range-fix span { color: var(--text-soft); line-height: 1.35; }
+.simplearm-base-range-fix button { background: #17140d; border: 1px solid #66512a; color: var(--warning); flex: none; font-size: .6rem; min-height: 44px; padding: 4px 8px; }
+.simplearm-base-range-fix button:disabled { cursor: not-allowed; opacity: .4; }
+.simplearm-base-self button:focus-visible { outline: 2px solid var(--arm-cyan); outline-offset: 2px; }
+.simplearm-base-status { color: var(--text-muted); font-size: .64rem; line-height: 1.4; margin: 0; min-height: 1.4em; }
+.simplearm-base-status.is-success { color: #78b993; }
+.simplearm-base-status.is-error { color: #ef9ca5; }
+
+.simplearm-torque { font-size: .62rem; letter-spacing: .04em; min-height: 28px; padding: 3px 11px; text-transform: uppercase; }
+.simplearm-torque.is-free { border-color: #66512a; color: var(--warning); }
+
+/* One field per row. Three across meant the number — the entire point of the
+   panel — got a couple of characters of width and the buttons got the rest. */
+.simplearm-fields { display: grid; gap: 5px; }
+.simplearm-fields label,
+.simplearm-goto { align-items: center; border: 1px solid var(--divider); display: flex; gap: 7px; min-width: 0; padding: 4px 5px 4px 10px; }
+.simplearm-fields label > span,
+.simplearm-goto > span { color: var(--text-muted); flex: none; font-size: .68rem; letter-spacing: .04em; text-transform: uppercase; width: 2.9rem; }
+/* min-width:0 is what stops a number field from refusing to shrink and pushing
+   its own buttons off the panel. */
+.simplearm-fields input,
+.simplearm-goto input { background: transparent; border: 0; color: var(--text-soft); flex: 1 1 auto; font: 700 1.3rem "Cascadia Code", monospace; min-width: 0; padding: 2px 0; text-align: right; }
+.simplearm-fields input:focus-visible,
+.simplearm-goto input:focus-visible { outline: 1px solid var(--arm-cyan); }
+.simplearm-fields label > i,
+.simplearm-goto > i { color: var(--text-muted); flex: none; font: .7rem "Cascadia Code", monospace; font-style: normal; width: 1.6rem; }
+.simplearm-fields label > button,
+.simplearm-goto > button { background: #11171c; border: 1px solid var(--divider); color: var(--text-muted); flex: none; font-size: .62rem; min-height: 28px; padding: 3px 9px; text-transform: uppercase; }
+.simplearm-fields label > button:hover,
+.simplearm-goto > button:hover { border-color: var(--arm-cyan); color: var(--arm-cyan); }
+
+.simplearm-goto { border-color: var(--arm-cyan-dim); }
+.simplearm-goto > button { border-color: var(--arm-cyan); color: var(--arm-cyan); }
+.simplearm-goto input:disabled, .simplearm-goto > button:disabled { opacity: .35; }
+
+/* The tuning numbers are set once and then ignored, so they keep the compact
+   row the limits gave up. */
+.simplearm-tuning { display: grid; gap: 6px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.simplearm-tuning label { display: grid; gap: 2px; min-width: 0; }
+.simplearm-tuning label > span { color: var(--text-muted); font-size: .6rem; letter-spacing: .03em; text-transform: uppercase; }
+.simplearm-tuning input { background: #11171c; border: 1px solid var(--divider); color: var(--text-soft); font: 700 .88rem "Cascadia Code", monospace; min-height: 28px; min-width: 0; padding: 2px 6px; text-align: right; width: 100%; }
+.simplearm-tuning input:focus-visible { outline: 1px solid var(--arm-cyan); }
+.simplearm-direction { background: #11171c; border: 1px solid var(--divider); color: var(--text-soft); font: 700 .82rem "Cascadia Code", monospace; min-height: 28px; padding: 2px 8px; width: 100%; }
+
+.simplearm-drive { accent-color: var(--arm-cyan); width: 100%; }
+.simplearm-drive:disabled { opacity: .35; }
+.simplearm-joint.is-free .simplearm-drive { accent-color: var(--warning); }
+
+.simplearm-joint > footer { color: var(--text-muted); display: flex; font: .68rem "Cascadia Code", monospace; gap: 10px; justify-content: space-between; }
+.simplearm-joint > footer .is-warning { color: var(--warning); }
+.simplearm-pinned { background: #251f14; border-left: 2px solid var(--warning); color: var(--text-soft); font-size: .68rem; line-height: 1.45; margin: 0; padding: 7px 9px; }
+.simplearm-hint { color: var(--text-muted); font-size: .68rem; line-height: 1.5; margin: 2px 0 0; }
+
+.simplearm-rename { align-items: center; background: #12181d; border-bottom: 1px solid var(--divider); border-left: 2px solid var(--arm-cyan); display: flex; flex: none; flex-wrap: wrap; gap: 10px; padding: 10px 18px; }
+.simplearm-rename strong { font-size: .8rem; }
+.simplearm-rename > span { color: var(--warning); font-size: .68rem; }
+.simplearm-rename label { align-items: center; color: var(--text-muted); display: flex; font-size: .66rem; gap: 5px; letter-spacing: .04em; text-transform: uppercase; }
+.simplearm-rename input { background: #0b1014; border: 1px solid var(--divider); color: var(--text-soft); font: 700 .95rem "Cascadia Code", monospace; padding: 4px 7px; text-align: right; width: 4.4rem; }
+.simplearm-rename button { font-size: .66rem; min-height: 30px; padding: 4px 12px; }
+
+/* Joints and camera share the side column so the arm scene stays visible at
+   the same useful size while the operator changes supporting views. */
+.simplearm-side { border-left: 1px solid var(--divider); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.simplearm-side .simplearm-joints { border-left: 0; }
+.simplearm-sidetabs { display: flex; flex: none; gap: 2px; padding: 12px 14px 0; }
+.simplearm-sidetabs button { background: transparent; border: 0; border-bottom: 2px solid transparent; border-radius: 0; color: var(--text-muted); font-size: .72rem; letter-spacing: .05em; min-height: 30px; padding: 4px 12px; }
+.simplearm-sidetabs button:hover { color: var(--text-soft); }
+.simplearm-sidetabs button.is-active { border-bottom-color: var(--arm-cyan); color: var(--arm-cyan); }
+.simplearm-sidepanel { display: flex; flex-direction: column; min-height: 0; }
+.simplearm-camera-panel { flex: 1 1 auto; overflow-y: auto; }
+.simplearm-camera { display: flex; flex-direction: column; gap: 12px; min-height: 100%; padding: 16px 18px 18px; }
+.simplearm-camera > header { align-items: start; display: flex; gap: 12px; justify-content: space-between; }
+.simplearm-camera > header div { display: grid; gap: 2px; }
+.simplearm-camera > header span { color: var(--text-muted); font: .58rem "Cascadia Code", monospace; letter-spacing: .08em; text-transform: uppercase; }
+.simplearm-camera > header h2 { color: var(--text-soft); font-size: .95rem; margin: 0; }
+.simplearm-camera-state { background: #101820; border: 1px solid var(--divider); border-radius: 3px; color: var(--text-muted); font: 600 .58rem "Cascadia Code", monospace; letter-spacing: .04em; padding: 4px 6px; text-transform: uppercase; }
+.simplearm-camera-state.is-ready { background: var(--arm-cyan-dim); border-color: #416b7d; color: var(--arm-cyan); }
+.simplearm-camera-state.is-loading { color: var(--arm-cyan); }
+.simplearm-camera-state.is-error { background: #211216; border-color: #8f3d47; color: #efb7bd; }
+.simplearm-camera-intro { color: var(--text-muted); font-size: .7rem; line-height: 1.5; margin: 0; }
+.simplearm-camera-actions { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.simplearm-camera-capture, .simplearm-camera-autofocus { border-color: #416b7d; color: var(--arm-cyan); font-size: .72rem; font-weight: 700; letter-spacing: .03em; min-height: 44px; min-width: 0; width: 100%; }
+.simplearm-camera-capture { background: var(--arm-cyan-dim); }
+.simplearm-camera-autofocus { background: #101820; }
+.simplearm-camera-capture:hover:not(:disabled), .simplearm-camera-autofocus:hover:not(:disabled) { background: #1c3b48; border-color: var(--arm-cyan); }
+.simplearm-camera-capture:active:not(:disabled), .simplearm-camera-autofocus:active:not(:disabled) { transform: translateY(1px); }
+.simplearm-camera-capture:disabled, .simplearm-camera-autofocus:disabled { cursor: not-allowed; opacity: .45; }
+.simplearm-camera-error { background: #211216; border-left: 2px solid #b8434f; color: #efb7bd; font-size: .68rem; line-height: 1.45; margin: 0; padding: 8px 9px; }
+.simplearm-camera-result { background: #101820; border-left: 2px solid #416b7d; color: var(--text-soft); font-size: .68rem; line-height: 1.45; margin: 0; padding: 8px 9px; }
+.simplearm-camera-evidence { display: grid; gap: 10px; }
+.simplearm-camera-evidence figure { background: #080d10; border: 1px solid var(--divider); margin: 0; }
+.simplearm-camera-evidence img { aspect-ratio: 16 / 9; background: #05080a; display: block; object-fit: contain; width: 100%; }
+.simplearm-camera-evidence figcaption { align-items: baseline; border-top: 1px solid var(--divider); display: flex; gap: 8px; justify-content: space-between; padding: 7px 9px; }
+.simplearm-camera-evidence figcaption span { color: var(--text-muted); font-size: .58rem; letter-spacing: .05em; text-transform: uppercase; }
+.simplearm-camera-evidence figcaption time { color: var(--text-soft); font: .62rem "Cascadia Code", monospace; text-align: right; }
+.simplearm-camera-evidence dl { background: #0b1115; border: 1px solid var(--divider); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; }
+.simplearm-camera-evidence dl > div { display: grid; gap: 2px; min-width: 0; padding: 7px 9px; }
+.simplearm-camera-evidence dl > div:nth-child(odd) { border-right: 1px solid var(--divider); }
+.simplearm-camera-evidence dl > div:nth-child(n + 3) { border-top: 1px solid var(--divider); }
+.simplearm-camera-evidence dt { color: var(--text-muted); font-size: .56rem; letter-spacing: .04em; text-transform: uppercase; }
+.simplearm-camera-evidence dd { color: var(--text-soft); font: .64rem "Cascadia Code", monospace; margin: 0; overflow-wrap: anywhere; }
+.simplearm-camera-frame { color: var(--text-muted); font: .56rem "Cascadia Code", monospace; margin: -2px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.simplearm-camera-empty { align-content: center; background: #0b1115; border: 1px solid var(--divider); display: grid; gap: 5px; min-height: 132px; padding: 16px; text-align: center; }
+.simplearm-camera-empty strong { color: var(--text-soft); font-size: .76rem; }
+.simplearm-camera-empty span { color: var(--text-muted); font-size: .66rem; line-height: 1.5; }
+.simplearm-camera-boundary { border-top: 1px solid var(--divider); color: var(--text-muted); font: .56rem "Cascadia Code", monospace; margin: auto 0 0; padding-top: 10px; text-align: center; text-transform: uppercase; }
+/* Narrow: stack and let the page scroll. Pinning the stage to a fraction of a
+   definite height crushed the flat view into a strip and floated the dial over
+   the joint panel. */
+@media (max-width: 900px) {
+  .simplearm { overflow-y: auto; }
+  .simplearm-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; }
+  .simplearm-side { border-left: 0; border-top: 1px solid var(--divider); }
+  .simplearm-joints { border-left: 0; overflow-y: visible; }
+  .simplearm-plan { grid-template-columns: minmax(0, 1fr); }
+  .simplearm-plan.is-sequence { grid-template-columns: minmax(0, 1fr); }
+  .simplearm-sequence-list > li { grid-template-columns: 24px minmax(0, 1fr) auto; }
+  .simplearm-sequence-timing { grid-column: 2 / -1; }
+  .simplearm-sequence-row-actions { grid-column: 2 / -1; grid-row: auto; }
+  .simplearm-plan-actions { justify-content: flex-start; }
+  .simplearm-plan-actions > span { flex-basis: auto; text-align: left; }
+}
+
+/* A wide laptop at 125-150% Windows scaling is still height-constrained. The
+   width-only mobile breakpoint never fired there, leaving the plan controls
+   below the fold and two independent scrollbars beside the arm. Keep the
+   desktop split, but spend less vertical space and let only the joint column
+   scroll. */
+@media (min-width: 901px) and (max-height: 850px) {
+  .simplearm-bar { padding: 8px 14px; }
+  .simplearm-bar-actions { gap: 5px; }
+  .simplearm-bar-actions button { min-height: 32px; padding-inline: 9px; }
+  .simplearm-note { padding: 7px 14px; }
+  .simplearm-body { grid-template-columns: minmax(0, 1fr) minmax(330px, 390px); }
+  .simplearm-viewtabs { padding: 8px 12px 0; }
+  .simplearm-plan,
+  .simplearm-plan.is-sequence { gap: 6px 12px; padding: 7px 12px 8px; }
+  .simplearm-plan-actions button { min-height: 36px; }
+  .simplearm-sidetabs { padding: 8px 10px 0; }
+  .simplearm-joints { gap: 7px; padding: 10px; }
+  .simplearm-joint { gap: 7px; padding: 9px 10px; }
+}

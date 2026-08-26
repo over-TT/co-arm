@@ -1,243 +1,218 @@
 # co-arm
 
-`co-arm` is a four-joint desktop camera arm made so Codex can look around a
-real desk and move the camera when it needs a better angle. Basically, the goal
-is to connect AI reasoning to a real camera and arm without hiding the safety
-checks or pretending that a command automatically worked.
+3D-printed four-joint camera arm that Codex can see through and move.
 
-This repo documents the build as it develops, including the hardware,
-electronics, software, CAD, tests, and the parts that still need physical
-proof.
+A Raspberry Pi handles the camera and commands. An ESP32 Arm HAT talks to four
+serial servos. The Base turns through a 4:1 set of 3D-printed gears.
 
-The Raspberry Pi handles the camera, API, geometry, calibration, and motion
-rules. An ESP32 on the servo HAT handles the real-time servo bus, watchdogs,
-STOP state, torque leases, and torque-off behavior.
+**Status:** working prototype. Codex has moved the real arm and captured the
+desk through its camera. The dashboard, Pi code, ESP32 firmware, simulator,
+Codex tools, and 12 printable parts are here. The last build details and public
+demo media are still coming.
 
-> **Important:** This is a working prototype, not a certified robot, safety
-> controller, finished product, or plug-and-play kit. Keep it supervised,
-> support the links whenever torque might turn off, keep the movement area
-> clear, and keep a physical servo-power cut within reach. The software STOP is
-> useful, but it is not the same as physically cutting power.
+---
 
-## The current build
+## Why I built it this way
+
+I wanted Codex to do something physical, not just spit out servo angles. It
+should be able to look at my desk, work out a move, move the arm, then look
+again and see what happened.
+
+The Pi handles the camera and the bigger commands. The ESP32 stays close to the
+servos and handles the fast communication. The dashboard and Codex use the same
+route to the arm, so I can test a move myself and let Codex use the exact same
+system.
+
+The Base uses a 4:1 gear set I printed. It trades some speed for more output
+torque and finer movement. An early version tracked the Base by adding up
+relative moves. That eventually lost the real position, so I switched to the
+servo's own absolute multi-turn reading and kept a physical zero mark.
+
+That failure shaped the rest of the project too: show the move first, run it,
+then read the joints and camera again. Less guessing, more checking what the
+real arm actually did.
+
+---
+
+## The build
 
 | Part | Reference build |
 | --- | --- |
-| Driven joints | Base, Shoulder, Elbow, and Camera |
+| Joints | Base, Shoulder, Elbow, and Camera |
 | Main servos | 3 x ST3215/STS-family serial-bus servos |
 | Camera servo | SC09/SCS-family serial-bus servo |
-| Base transmission | 4:1 external gearing |
-| Gateway | Raspberry Pi 4 |
-| Servo controller | ESP32 on a Waveshare Bus Servo Driver HAT (A) |
-| Camera | Raspberry Pi Camera Module 1 Rev 1.3 / OV5647, fixed focus |
-| Measured geometry | 60 mm pivot height, 180 mm upper arm, 220 mm elbow-to-tip |
-| Current controller line | `arm-hat-2.4.0`, native Mode-0 absolute Base control |
+| Base drive | 3D-printed 4:1 gear reduction |
+| Main computer | Raspberry Pi 4 |
+| Servo controller | ESP32 on Waveshare Bus Servo Driver HAT (A) |
+| Camera | Raspberry Pi Camera Module 3 Wide / IMX708 |
+| Arm lengths | 180 mm upper arm, 220 mm elbow-to-camera tip |
+| Arm HAT firmware | `arm-hat-2.7.2` |
 
-The Camera joint is the fourth driven joint. It aims the sensor, but it is not
-part of the two-link Shoulder and Elbow inverse kinematics.
+The Camera joint only aims the sensor. Shoulder and Elbow place it. Base turns
+the whole arm around the desk.
 
-## How it is connected
+---
+
+## How it works
 
 ```mermaid
 flowchart LR
-    Operator["Human or AI client"] --> MCP["Typed arm tools"]
-    Dashboard["Arm dashboard"] --> Backend["Local backend"]
-    MCP --> Pi["Raspberry Pi gateway"]
-    Backend --> Pi
-    Pi --> Camera["OV5647 camera"]
-    Pi --> HAT["ESP32 Arm HAT"]
-    HAT --> Bus["1 Mbps serial-servo bus"]
-    Bus --> Joints["Base, Shoulder, Elbow, Camera"]
+    USER["Dashboard or Codex"] --> PI["Raspberry Pi"]
+    PI --> CAM["Camera"]
+    PI --> HAT["ESP32 Arm HAT"]
+    HAT --> SERVOS["Four serial servos"]
+    SERVOS --> HAT
+    SIM["Isaac Sim"] -. same arm interface .-> USER
 ```
 
-The basic path is the laptop or AI tools to the Raspberry Pi, then the Pi talks
-to the ESP32 Arm HAT, and the HAT controls the serial-bus servos. The Pi also
-owns the camera and the higher-level movement checks.
+The dashboard and Codex both send moves to the Pi. The Pi works out the joint
+targets and passes them to the ESP32. The ESP32 talks to the servos and sends
+their positions back. The camera gives a separate look at what happened.
 
-## Clone it and let Codex guide you
+Codex gets useful arm actions such as **look**, **preview**, **move**, and
+**release**. It does not need to build raw servo packets or know register
+addresses. A preview does not move anything; it just shows the planned joint
+targets and path before they are sent.
 
-The fun way to use this repo is to clone it, open the folder in Codex, say what
-hardware is connected, and let Codex walk through the setup with you. The repo
-includes [`AGENTS.md`](AGENTS.md) plus a dedicated
-[human and AI setup guide](docs/SETUP_WITH_CODEX.md), so the same checklist can
-be followed by a person or an agent.
+The simulator uses the same general route, so most of the software can be run
+without the real arm connected.
 
-You need Git and Python 3.10 or newer. The checker has no third-party Python
-dependencies.
+---
 
-```bash
-git clone https://github.com/over-TT/co-arm.git
-cd co-arm
+## Repo
+
+- [`software/dashboard/`](software/dashboard/) — the standalone arm dashboard.
+- [`software/python/robot_gateway/`](software/python/robot_gateway/) — the Pi
+  code for the arm and camera.
+- [`software/firmware/`](software/firmware/) — the ESP32 Arm HAT firmware.
+- [`software/python/arm_mcp/`](software/python/arm_mcp/) and
+  [`software/plugin/`](software/plugin/) — the tools Codex uses to work with
+  the arm.
+- [`software/python/arm_sim/`](software/python/arm_sim/) — the Isaac Sim model
+  and simulator bridge.
+- [`software/operations/`](software/operations/) — setup, deployment, status,
+  recovery, and build scripts.
+- [`hardware/3mf/`](hardware/3mf/) — all 12 current printed parts, including
+  both Base gears, the arm links, servo mounts, and camera pieces.
+- [`hardware/`](hardware/README.md) — BOM and the rest of the mechanical and
+  electrical build files.
+- [`docs/`](docs/README.md) — setup, build notes, history, troubleshooting, and
+  deeper technical details.
+- [`docs/SETUP_WITH_CODEX.md`](docs/SETUP_WITH_CODEX.md) — the full path from a
+  clean checkout to simulation or a real arm.
+
+[`software/SOURCE_INDEX.json`](software/SOURCE_INDEX.json) is the quick map for
+an agent or developer looking for a particular piece of source.
+
+---
+
+## Check it without hardware
+
+Python 3.11 is the tested Python version. The dashboard needs Node 20.19.x or
+22.12+ and the pnpm version in `software/dashboard/package.json`.
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install --requirement ".\software\python\requirements.lock"
+.\.venv\Scripts\python.exe -m pip install --no-deps --editable ".\software\python"
+
+python tools/build_source_manifest.py --check
 python tools/check_repo.py
+
+Set-Location software\python
+..\..\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider
+..\..\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider ..\firmware\tests\test_arm_hat_controller_v1.py
+
+Set-Location ..\dashboard
+pnpm install --frozen-lockfile
+pnpm test
+pnpm build
+Set-Location ..\..
 ```
 
-Then open the `co-arm` folder in Codex and paste this:
+These checks do not connect to or move a real arm. Isaac Sim and the ESP32
+toolchain are separate installs.
+
+---
+
+## Run the dashboard
+
+After installing the Python package and building the dashboard:
+
+```powershell
+.\.venv\Scripts\python.exe -m web_backend
+```
+
+The full dashboard and gateway setup is in
+[`docs/SETUP_WITH_CODEX.md`](docs/SETUP_WITH_CODEX.md).
+
+---
+
+## Run the simulator
+
+Point the launcher at your Isaac Sim Python:
+
+```powershell
+$env:PYTHONPATH = (Resolve-Path ".\software\python").Path
+.\.venv\Scripts\python.exe .\software\operations\scripts\run_arm_sim.py --ensure-tokens
+$isaacPython = "<absolute-path-to-isaac-python>"
+.\.venv\Scripts\python.exe .\software\operations\scripts\run_arm_sim.py --isaac-python $isaacPython
+```
+
+Add `--gui` to see the Isaac window. Use `--stop` to stop the local simulator
+stack.
+
+---
+
+## Put Codex on it
+
+Open the repo in Codex and paste this:
 
 ```text
-Help me set up co-arm from this checkout. Read AGENTS.md,
-docs/SETUP_WITH_CODEX.md, docs/STATUS.md, docs/KNOWN_LIMITATIONS.md,
-docs/CONTROL_AND_SAFETY.md, and docs/COMMISSIONING.md before acting.
-
-My Raspberry Pi is [not connected / connected over SSH at <host>]. Start by
-checking what files and hardware are actually available. Begin with read-only,
-no-motion checks. Ask me only for critical missing hardware facts. Do not move
-the arm, release torque, change wiring, flash firmware, deploy services, or
-disable a guard until you show me the exact step and I approve it. Keep source
-checks, live telemetry, command acceptance, physical arrival, and camera proof
-separate. Maintain a setup checklist as we go.
+Help me run co-arm. Read AGENTS.md and docs/SETUP_WITH_CODEX.md first. Check
+whether I am using source only, Isaac Sim, or the real arm, then take the
+matching path. For a configured real arm, read its current state, show the move,
+run it, and check the joints or camera afterward. Treat the physical task I ask
+for as the go-ahead for its normal steps. Keep updates short and stop only if a
+real fault or missing physical fact changes the job.
 ```
 
-Codex should first explain what can be completed from the current checkout,
-check the Raspberry Pi without moving anything, and stop at any step that needs
-a real hardware fact or deliberate approval.
+The external MCP/plugin is the supported Codex connection. It talks to the same
+Pi arm service as the dashboard.
 
-### What works from this checkout today
+---
 
-This is currently a documentation-first release. It is enough for Codex to:
+## Build the real arm
 
-- explain the architecture and evidence model;
-- audit parts, labels, wiring plans, CAD folders, and the BOM;
-- prepare a build-specific checklist;
-- guide safe Raspberry Pi SSH and camera discovery;
-- identify the next missing file or owner decision;
-- walk through commissioning in the correct order.
+Start with [`docs/ASSEMBLY.md`](docs/ASSEMBLY.md) and
+[`docs/COMMISSIONING.md`](docs/COMMISSIONING.md).
 
-The portable firmware, Pi gateway, MCP server, and standalone dashboard source
-have not been released into this repo yet. That means this checkout cannot yet
-perform a one-command install, flash, or deployment. Codex must detect that
-boundary instead of inventing commands. The source release status is tracked in
-[`software/README.md`](software/README.md).
+The short version:
 
-## Raspberry Pi first connection
+1. print and assemble the mechanism, including the 4:1 Base gears;
+2. wire the Pi, camera, Arm HAT, and four servos;
+3. give every servo the correct ID;
+4. mark the physical Base zero;
+5. calibrate one joint at a time;
+6. test small moves before coordinated motion;
+7. connect the dashboard or Codex after the arm works normally.
 
-If a Pi is already connected, keep the servo rail off and support the arm before
-starting. Logic-only discovery can begin without authorizing firmware changes
-or movement.
+The reference software and all 12 current printable parts are included. To
+finish the build package, I still need to add:
 
-1. For a new Pi, install Raspberry Pi OS and enable SSH through
-   [Raspberry Pi Imager](https://www.raspberrypi.com/documentation/computers/getting-started.html#install-using-imager).
-2. Connect from the computer that has the repo:
+- the large Base bearing details;
+- final print settings and the screw/insert list;
+- an as-built wiring diagram and pinout;
+- the final power details;
+- assembly photos, a hero photo, and a short real-arm demo.
 
-   ```bash
-   ssh <pi-user>@<pi-host>
-   ```
+See [`docs/STATUS.md`](docs/STATUS.md) for what has actually been checked on the
+reference arm.
 
-3. Run the read-only checks below on the Pi:
+---
 
-   ```bash
-   uname -a
-   cat /etc/os-release
-   python3 --version
-   rpicam-hello --list-cameras
-   ```
+## License
 
-   Raspberry Pi's official [SSH guide](https://www.raspberrypi.com/documentation/computers/remote-access.html#ssh)
-   and [camera guide](https://www.raspberrypi.com/documentation/computers/camera_software.html)
-   explain these platform-level steps.
-
-4. Give the results to Codex, but remove usernames, hostnames, addresses, serial
-   numbers, or anything else that should not enter a public issue or commit.
-5. Let Codex compare the detected setup with the
-   [hardware guide](docs/HARDWARE.md), [electronics guide](docs/ELECTRONICS.md),
-   and [commissioning order](docs/COMMISSIONING.md).
-
-These checks prove that SSH, the OS, Python, or camera discovery work at that
-moment. They do not prove that the gateway, controller, servo bus, calibration,
-or motion path is ready. Continue with the full
-[human and AI setup guide](docs/SETUP_WITH_CODEX.md).
-
-## Current proof status
-
-The proof levels stay separate because passing a software test and moving the
-real arm are not the same claim.
-
-- Automated tests prove parts of the software, not the physical arm.
-- Live telemetry proves what the controller measured at that moment.
-- Sending a target does not automatically prove that the arm reached it.
-- A camera frame only proves what is actually visible in that frame.
-- Observed movement is physical evidence, but it is not a proper calibration
-  table unless the numbers were recorded too.
-
-By 2026-08-10, the Base configuration for native absolute multi-turn control
-had been read back, and normal zero, positive, negative, and return movement
-had been physically checked on the reference arm.
-
-By 2026-08-11, the motionless plan and preview system, plus the one-use apply
-contract, had been deployed. The preview path was exercised, but the newer
-plan/apply movement path still needs a properly recorded physical run before it
-can be called fully proved.
-
-The complete proof list and remaining device tests are in
-[Current status](docs/STATUS.md).
-
-## What is in this repo
-
-- [`docs/`](docs/README.md) has the detailed arm documentation, current status,
-  setup flow, hardware, architecture, controls, safety, vision, assembly,
-  commissioning, history, troubleshooting, and release notes.
-- [`hardware/`](hardware/README.md) has the BOM and prepared folders for native
-  CAD, STEP, STL, drawings, schematics, and wiring.
-- [`software/`](software/README.md) explains the clean software release plan and
-  has prepared folders for the firmware, Pi gateway, MCP server, and dashboard.
-- [`media/`](media/README.md) is where approved photos, diagrams, and video
-  links will go.
-- [`tools/check_repo.py`](tools/check_repo.py) checks for missing files, broken
-  links, private paths, device IDs, secrets, oversized files, and common things
-  that should not be pushed.
-
-The working software currently lives in a larger private workspace. Copying
-that whole workspace would also copy unrelated projects, local runtime files,
-generated builds, and private machine details. Clean, portable arm code will be
-added to the prepared software folders after its public scope and licenses are
-decided.
-
-## Where CAD, STL files, pictures, and videos go
-
-The folders are already laid out so the repo does not need to be reorganized
-later:
-
-1. Editable CAD goes in `hardware/cad/native/`.
-2. Millimetre STEP exports go in `hardware/cad/step/`.
-3. Oriented, print-ready millimetre STL files go in
-   `hardware/stl/print-ready/`.
-4. Dimensioned PDF or DXF drawings go in `hardware/drawings/`.
-5. New unreviewed photos and videos first go in the ignored `media/raw/`
-   folder.
-6. After checking the background, metadata, labels, and anything personal, the
-   approved files go into the matching tracked folder under `media/photos/`,
-   `media/video/`, or `media/diagrams/`.
-
-The exact file naming and export setup is in
-[CAD and STL](docs/CAD_AND_STL.md). The picture and video shot list is in the
-[Media guide](docs/MEDIA_GUIDE.md). There is also a simple upload checklist in
-[Owner handoff](docs/OWNER_HANDOFF.md).
-
-## If you want to reproduce it
-
-Start with these pages:
-
-1. [Human and AI setup guide](docs/SETUP_WITH_CODEX.md)
-2. [Current status and evidence](docs/STATUS.md)
-3. [Known limitations](docs/KNOWN_LIMITATIONS.md)
-4. [Control and safety boundaries](docs/CONTROL_AND_SAFETY.md)
-5. [Hardware inventory](docs/HARDWARE.md)
-6. [Electronics and power](docs/ELECTRONICS.md)
-7. [Assembly](docs/ASSEMBLY.md)
-8. [Commissioning](docs/COMMISSIONING.md)
-
-Do not blindly copy the reference calibration. Every build needs its own
-geometry measurements, joint zeros, limits, gearing checks, servo checks, and a
-real physical way to cut servo power.
-
-## What is still missing
-
-The documentation structure is ready, but the repository still needs the
-actual CAD, STL files, drawings, approved pictures and videos, exact fastener
-and print details, and cleaned software exports. Public attribution and
-licenses also still need to be decided.
-
-Those remaining questions are tracked in
-[Open questions](docs/OPEN_QUESTIONS.md). Until a license is added, this repo
-does not grant an open-source or open-hardware license. See
-[Licensing](LICENSING.md) before copying, manufacturing from, or redistributing
-anything.
+No code, hardware, documentation, or media license has been selected yet. See
+[`LICENSING.md`](LICENSING.md) before reusing or publishing the project.

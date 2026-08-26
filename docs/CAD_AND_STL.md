@@ -1,4 +1,4 @@
-# CAD, STL, drawing, and export standard
+# CAD and print-file standard
 
 Use this convention for every mechanical file added to co-arm. Its purpose is
 to keep native design intent, neutral exchange files, printable meshes, and
@@ -11,6 +11,7 @@ manufacturing drawings synchronized without relying on filenames such as
 | --- | --- | --- |
 | Editable native CAD | `hardware/cad/native/` | Original parametric parts and assemblies in the authoring application's format |
 | Neutral solid CAD | `hardware/cad/step/` | Revision-matched `.step`/`.stp` exports |
+| Current 3MF parts | `hardware/3mf/` | The printed parts used by the current arm |
 | General STL meshes | `hardware/stl/` | Revision-matched individual printable-part meshes in millimetres |
 | Approved print-ready STL | `hardware/stl/print-ready/` | Manifold, checked, intentionally oriented STL selected for the documented print process |
 | Dimensioned drawings | `hardware/drawings/` | PDF plus editable/source drawing where available |
@@ -31,6 +32,8 @@ safe.
 - Assembly axes: `+Z` up, `+X` forward at Base zero, `+Y` right-handed.
 - Mesh unit assumption: STL carries no reliable unit metadata, so every STL is
   exported numerically in millimetres and its README/drawing must say so.
+- 3MF files must declare millimetres in their model metadata. Still check their
+  bounding boxes before printing.
 - Do not rescale STL on import. A 20 mm calibration cube should import as 20 mm.
 
 The reference assembly should reproduce the recorded kinematic dimensions:
@@ -59,8 +62,8 @@ Rules:
   `left`, `right`, or a documented hardware variant;
 - revision is two digits beginning at `r01`;
 - extension is lowercase;
-- native, STEP, STL, and drawing exports of the same geometry use the same base
-  name and revision.
+- native, STEP, 3MF, STL, and drawing exports of the same geometry use the same
+  base name and revision.
 
 Examples:
 
@@ -150,6 +153,12 @@ profile are documented. If reorientation alone changes the file bytes, keep
 the same geometry revision but add a clear `_print` variant and record that the
 solid geometry is unchanged.
 
+## 3MF parts
+
+Use clear part names, check the units and part count, and add the part to the
+short list in [`hardware/3mf/README.md`](../hardware/3mf/README.md). All 12
+current arm parts are indexed there.
+
 ## Print-ready release record
 
 For every file promoted to `print-ready/`, document:
@@ -165,8 +174,9 @@ For every file promoted to `print-ready/`, document:
 - quantity and mirrored copies;
 - observed fit result and which physical build tested it.
 
-All of those values are currently **TODO (owner verification)**. Until they are
-filled, an STL is an export candidate, not a proven print-ready part.
+Those print-process values are still **TODO (owner verification)** for the
+current 3MF set. Until they are filled, a 3MF or STL is a printable geometry
+candidate, not a verified print profile.
 
 ## Drawing requirements
 
@@ -196,6 +206,7 @@ fastener stack order, cable routing, zero-position views, and gear timing/mesh.
 - [ ] Reference dimensions are 60/180/220 mm where applicable.
 - [ ] Base drive represents 4:1 reduction where applicable.
 - [ ] STEP reopened and checked.
+- [ ] 3MF units, bounding box, part count, and original filename recorded.
 - [ ] STL mesh and bounding box checked.
 - [ ] Drawing regenerated from the same revision.
 - [ ] Print process fields completed or explicitly marked TODO.

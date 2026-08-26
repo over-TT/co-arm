@@ -1,0 +1,91 @@
+{
+  "schema": "arm-sim.camera-profile.v1",
+  "profileId": "rpi-camera-module-3-wide-imx708-nominal-v1",
+  "description": "Manufacturer-nominal Raspberry Pi Camera Module 3 Wide reference profile for the provisional Isaac RGB camera.",
+  "referenceHardware": {
+    "manufacturer": "Raspberry Pi",
+    "module": "Camera Module 3 Wide",
+    "sensorModel": "imx708",
+    "variant": "wide",
+    "sensorResolutionPx": {
+      "width": 4608,
+      "height": 2592
+    },
+    "sensorActiveAreaMm": {
+      "width": 6.45,
+      "height": 3.63,
+      "diagonal": 7.4
+    },
+    "focalLengthMm": 2.75,
+    "fieldOfViewDeg": {
+      "horizontal": 102.0,
+      "vertical": 67.0,
+      "diagonal": 120.0
+    },
+    "minimumFocusDistanceMm": 50.0,
+    "focusCapability": "powered_autofocus",
+    "evidenceStatus": "manufacturer_nominal_not_live_verified",
+    "source": "https://www.raspberrypi.com/documentation/accessories/camera.html"
+  },
+  "simulation": {
+    "cameraId": "isaac-sim-camera",
+    "sensorModel": "isaac-imx708-wide-provisional",
+    "identityConfidence": "simulated_model",
+    "renderProfiles": {
+      "survey": {
+        "widthPx": 1280,
+        "heightPx": 720
+      },
+      "detail": {
+        "widthPx": 1280,
+        "heightPx": 720,
+        "limitation": "Detail currently uses the same 1280 x 720 render as survey; native 4608 x 2592 detail rendering is not modeled."
+      }
+    },
+    "projection": {
+      "model": "pinhole",
+      "focalLengthMm": 2.75,
+      "horizontalApertureMm": 6.791934,
+      "verticalApertureMm": 3.640371,
+      "principalPointNormalized": [
+        0.5,
+        0.5
+      ],
+      "matchedNominalFieldOfViewDeg": {
+        "horizontal": 102.0,
+        "vertical": 67.0
+      },
+      "status": "manufacturer_nominal_fov_matched_pinhole_approximation",
+      "limitation": "The renderer matches the advertised horizontal and vertical field of view with an undistorted pinhole approximation. It is not a calibrated model of the wide lens."
+    },
+    "focusModel": {
+      "physicalTargetCapability": "powered_autofocus",
+      "status": "not_modeled",
+      "reportedCapability": "unsupported",
+      "limitation": "Isaac currently renders an always-sharp pinhole image and does not simulate lens position, depth of field, PDAF, or autofocus convergence."
+    }
+  },
+  "calibration": {
+    "status": "uncalibrated",
+    "intrinsics": {
+      "widthPx": null,
+      "heightPx": null,
+      "fxPx": null,
+      "fyPx": null,
+      "cxPx": null,
+      "cyPx": null,
+      "status": "required_from_installed_camera_per_capture_mode"
+    },
+    "distortion": {
+      "model": null,
+      "coefficients": [],
+      "status": "required_from_installed_camera_per_capture_mode"
+    },
+    "extrinsics": {
+      "translationM": null,
+      "rpyRad": null,
+      "status": "required_from_final_physical_mount"
+    },
+    "warning": "Manufacturer specifications identify the target hardware and provide a nominal simulator seed. They do not prove the installed capture mode, lens distortion, optical center, or camera-to-arm transform."
+  }
+}

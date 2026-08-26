@@ -1,0 +1,166 @@
+{
+  "hello": {
+    "controllerId": "armhat-example-controller",
+    "bootId": "boot-example-session",
+    "firmwareVersion": "arm-hat-1.0.2",
+    "protocolVersion": 1,
+    "state": "disarmed",
+    "motionState": "ready",
+    "torqueState": "unknown",
+    "busState": "unknown",
+    "bootTorqueOffSent": true,
+    "servosState": "unknown",
+    "servoCount": null,
+    "requestMaxBytes": 256,
+    "responseMaxBytes": 4096,
+    "host": { "uart": "Serial0", "baud": 115200 },
+    "servoBus": { "uart": "Serial1", "baud": 1000000, "rx": 18, "tx": 19 },
+    "watchdogMs": 750,
+    "leaseMs": { "min": 100, "max": 2000 },
+    "servoModel": "user_confirmation_required",
+    "registerProfile": "ST3215_candidate",
+    "capabilities": [
+      "scan",
+      "single_servo_id",
+      "set_position_mode",
+      "capture",
+      "torque_lease",
+      "bounded_nudge",
+      "telemetry",
+      "stop"
+    ]
+  },
+  "status": {
+    "controllerId": "armhat-example-controller",
+    "bootId": "boot-example-session",
+    "firmwareVersion": "arm-hat-1.0.2",
+    "protocolVersion": 1,
+    "state": "disarmed",
+    "motionState": "ready",
+    "torqueState": "off",
+    "busState": "online",
+    "servosState": "online",
+    "servoCount": 1,
+    "busBaud": 1000000,
+    "hardwareEstop": "not_detected",
+    "stopped": false,
+    "watchdogFresh": true,
+    "hostAgeMs": 20,
+    "safetyFault": false,
+    "bootTorqueOffSent": true,
+    "lease": null,
+    "torqueOffPending": false,
+    "torqueOffPendingCount": 0,
+    "torqueOffRetryServoId": null,
+    "proposal": null,
+    "servos": [
+      {
+        "id": 3,
+        "rawPosition": 2048,
+        "speed": 0,
+        "load": 0,
+        "voltageVolts": 12.0,
+        "temperatureC": 31,
+        "moving": false,
+        "currentRaw": 0,
+        "torqueState": "off",
+        "packetAgeMs": 0,
+        "errors": [],
+        "statusError": 0,
+        "online": true,
+        "fresh": true,
+        "operatingMode": 0
+      }
+    ]
+  },
+  "scan": {
+    "foundIds": [3],
+    "completeRange": { "minId": 0, "maxId": 20 },
+    "collisionSuspected": false
+  },
+  "assignId": { "oldId": 1, "newId": 3, "verified": true, "locked": true },
+  "setPositionMode": {
+    "servoId": 3,
+    "previousOperatingMode": 1,
+    "operatingMode": 0,
+    "verified": true,
+    "locked": true,
+    "torqueState": "off",
+    "minimumPosition": 0,
+    "maximumPosition": 4095
+  },
+  "capture": {
+    "id": 3,
+    "rawPosition": 2048,
+    "speed": 0,
+    "load": 0,
+    "voltageVolts": 12.0,
+    "temperatureC": 31,
+    "moving": false,
+    "currentRaw": 0,
+    "torqueState": "off",
+    "packetAgeMs": 0,
+    "errors": [],
+    "statusError": 0,
+    "online": true,
+    "fresh": true,
+    "operatingMode": 0,
+    "sampleCount": 5,
+    "variationTicks": 2,
+    "positionMedian": 2048,
+    "evidenceId": "obs_TEST_ONLY_EVIDENCE_1"
+  },
+  "torqueLease": {
+    "servoId": 3,
+    "leaseMs": 1000,
+    "holdRawPosition": 2048,
+    "torqueState": "on",
+    "confirmed": true
+  },
+  "torqueOffOne": {
+    "servoId": 3,
+    "all": false,
+    "torqueState": "off",
+    "confirmed": true
+  },
+  "torqueOffAll": {
+    "servoId": null,
+    "all": true,
+    "torqueState": "off",
+    "confirmed": true
+  },
+  "prepareNudge": {
+    "proposalId": "pTEST_ONLY_PROPOSAL_1",
+    "servoId": 3,
+    "startRawPosition": 2048,
+    "targetRawPosition": 2071,
+    "deltaTicks": 23,
+    "speed": 80,
+    "acceleration": 10,
+    "expiresInMs": 15000
+  },
+  "executeNudge": {
+    "proposalId": "pTEST_ONLY_PROPOSAL_1",
+    "servoId": 3,
+    "startRawPosition": 2048,
+    "targetRawPosition": 2071,
+    "rawPosition": 2070,
+    "measuredDeltaTicks": 22,
+    "positionErrorTicks": -1,
+    "torqueState": "off",
+    "completed": true,
+    "evidenceId": "obs_TEST_ONLY_EVIDENCE_2"
+  },
+  "stop": {
+    "stopped": true,
+    "torqueState": "off",
+    "confirmed": true,
+    "torqueOffBroadcastSent": true
+  },
+  "reset": {
+    "stopped": false,
+    "torqueState": "off",
+    "torqueOffConfirmed": true,
+    "reset": true
+  }
+}

@@ -1,18 +1,36 @@
-# Dashboard source — extraction pending
+# Co-Arm dashboard
 
-The existing Arm Lab and embedded Arm Chat run inside a broader private React
-and Python application. The Arm components alone are not a standalone build:
-they rely on the host entrypoint, global styles, test setup, backend routes,
-session supervision, and other parent configuration.
+This directory is the standalone React/Vite frontend for the Co-Arm itself. It
+contains Overview, guarded Control, bounded Live Follow, camera, calibration,
+commissioning, Guide, SIM/REAL selection, and the visible Isaac Sim launcher.
 
-A public dashboard release must provide:
+Agent assistance stays outside the dashboard. Open the repository root in
+Codex, follow `AGENTS.md` and `docs/SETUP_WITH_CODEX.md`, then configure the
+portable plugin at `software/plugin/plugins/arm-alliance/` to help build, set
+up, and run the arm through the Raspberry Pi-backed stack.
 
-- an arm-only frontend entrypoint and package/build files;
-- an arm-only backend or a documented direct gateway interface;
-- simulation that cannot be confused with live hardware;
-- portable local authentication/configuration;
-- focused UI/API tests in a fresh checkout;
-- no bundled Codex/Arduino toolchains, sessions, tokens, or parent-app state.
+The dashboard keeps the same-origin API contract as the integrated ARM
+application. It expects the Co-Arm backend to serve the `/api/arm` and
+`/api/camera` routes. The frontend deliberately remains useful
+in its offline state when those routes are unavailable; it does not simulate a
+successful hardware connection.
 
-Until that extraction is complete, this folder documents the boundary and must
-not be described as runnable source.
+## Run locally
+
+```sh
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+Open the URL printed by Vite. For live backend access, serve the built files
+from the ARM backend or put both behind a same-origin reverse proxy.
+
+## Verify
+
+```sh
+pnpm test
+pnpm build
+```
+
+The production output is written to `dist/` and is intentionally ignored by
+Git.

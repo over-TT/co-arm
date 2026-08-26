@@ -1,0 +1,44 @@
+/* Owned by ArmViewport.tsx and imported with the component. */
+.arm-viewport {
+  --arm-cyan: #83c4dc;
+  --arm-cyan-dim: #17313c;
+  --arm-steel: #c7d2da;
+
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 15px 17px 8px;
+}
+.arm-viewport > header { align-items: start; display: flex; gap: 16px; justify-content: space-between; }
+.arm-viewport h2 { font-size: 1rem; margin: -2px 0 0; }
+.arm-view-tools { display: flex; gap: 5px; }
+.arm-view-tools button { background: #11171c; border-color: var(--divider); border-radius: 4px; color: var(--text-muted); font-size: .7rem; min-height: 34px; padding: 5px 9px; }
+.arm-view-tools button.is-active { background: var(--arm-cyan-dim); border-color: #416b7d; color: var(--arm-cyan); }
+.arm-canvas-wrap { border: 1px solid #26323b; flex: 1; margin-top: 10px; min-height: 260px; overflow: hidden; position: relative; }
+.arm-canvas-wrap::before { background: linear-gradient(90deg, transparent, rgb(131 196 220 / 6%), transparent); content: ""; height: 1px; left: 0; position: absolute; right: 0; top: 31%; z-index: 1; }
+.arm-canvas { display: block; height: 100%; min-height: 260px; touch-action: none; user-select: none; width: 100%; }
+.arm-canvas.is-target { cursor: crosshair; }
+.arm-canvas.is-orbit { cursor: grab; }
+.arm-canvas.is-orbit:active { cursor: grabbing; }
+.arm-grid line { stroke: #30404b; stroke-opacity: .48; stroke-width: .8; }
+.arm-axes line { stroke: #657582; stroke-width: 1.2; }
+.arm-axes text { fill: #7f96a6; font: 10px "Cascadia Code", monospace; }
+.arm-current path { fill: none; filter: drop-shadow(0 8px 8px rgb(0 0 0 / 45%)); stroke: #cbd7df; stroke-linecap: round; stroke-linejoin: round; stroke-width: 16; }
+.arm-current circle { fill: #26343e; stroke: #cbd7df; stroke-width: 3; }
+.arm-preview path { fill: none; stroke: var(--arm-cyan); stroke-dasharray: 7 7; stroke-linecap: round; stroke-width: 7; }
+.arm-preview circle { fill: #0b1418; stroke: var(--arm-cyan); stroke-width: 2; }
+.arm-target circle { fill: #0d1b20; stroke-width: 2; }
+.arm-target line { stroke-width: 1.5; }
+.arm-target.is-reachable circle, .arm-target.is-reachable line { stroke: var(--arm-cyan); }
+.arm-target.is-blocked circle, .arm-target.is-blocked line { stroke: var(--danger); }
+.arm-pose-legend { align-items: center; background: rgb(11 13 16 / 84%); border: 1px solid var(--divider); bottom: 12px; display: flex; gap: 14px; left: 12px; padding: 7px 9px; position: absolute; }
+.arm-pose-legend span { align-items: center; color: var(--text-muted); display: flex; font-size: .67rem; gap: 5px; }
+.arm-pose-legend i { border-radius: 50%; display: inline-block; height: 7px; width: 7px; }
+.arm-pose-legend i.is-current { background: var(--arm-steel); }
+.arm-pose-legend i.is-preview, .arm-pose-legend i.is-target { background: var(--arm-cyan); }
+.arm-pose-legend i.is-blocked { background: var(--danger); }
+.arm-coordinate-readout { background: rgb(9 11 13 / 86%); border: 1px solid var(--divider); display: flex; flex-direction: column; gap: 4px; padding: 7px 9px; position: absolute; right: 12px; top: 12px; }
+.arm-coordinate-readout span { color: var(--text-muted); font: .66rem "Cascadia Code", monospace; }
+.arm-coordinate-readout b { color: var(--text-soft); font-weight: 600; margin-left: 6px; }
+.arm-viewport-help { color: var(--text-muted); font-size: .7rem; margin: 7px 0 0; }

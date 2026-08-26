@@ -1,0 +1,45 @@
+[Unit]
+Description=Raspberry Pi inspection and disarmed arm commissioning gateway
+Wants=network.target
+After=network.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=__SERVICE_USER__
+Group=__SERVICE_GROUP__
+SupplementaryGroups=dialout
+WorkingDirectory=__INSTALL_ROOT__
+StateDirectory=arm-gateway
+StateDirectoryMode=0700
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONUNBUFFERED=1
+UMask=0077
+# Physical UART is deliberately dormant in the deployed base unit. Add the
+# reviewed --arm-controller-port drop-in only after the already-installed ESP32
+# identity and capabilities are ready to be checked. Pi recovery never implies
+# a HAT firmware flash.
+ExecStart=__INSTALL_ROOT__/.venv/bin/python -m robot_gateway serve --camera picamera2 --camera-profile module3-wide --arm-state-dir /var/lib/arm-gateway --token-file __INSTALL_ROOT__/.robot-gateway.token --host 127.0.0.1 --port 8787
+Restart=always
+RestartSec=3
+TimeoutStopSec=15
+
+# Picamera2/libcamera needs access to the Pi camera devices and IPC, while the
+# gateway itself does not need privilege escalation or mutable system paths.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=false
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/var/lib/arm-gateway
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectKernelLogs=true
+ProtectHostname=true
+LockPersonality=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

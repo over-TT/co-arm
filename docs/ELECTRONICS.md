@@ -10,7 +10,7 @@ photographed end to end.
 | Block | Recorded device | Role |
 | --- | --- | --- |
 | Gateway | Raspberry Pi 4 | Network/API host and camera capture |
-| Camera | Raspberry Pi Camera Module 1 Rev 1.3 (`OV5647`) | Fixed-focus image source over the Pi camera interface |
+| Camera | Raspberry Pi Camera Module 3 Wide (`IMX708`) | Powered-autofocus image source over the Pi camera interface |
 | Motion controller | Waveshare Bus Servo Driver HAT (A), SKU 27577 | Integrated ESP32, host-UART endpoint, and serial-servo bus control |
 | Main joints | 3 x ST3215/STS-family serial-bus servos | Base, Shoulder, and Elbow |
 | Camera joint | SC09/SCS-family serial-bus servo | Camera pitch |
@@ -23,7 +23,7 @@ be transcribed from the physical components into the BOM.
 
 ```text
 Raspberry Pi 4
-  +-- camera interface ---------------- OV5647 camera module
+  +-- camera interface ---------------- Camera Module 3 Wide / IMX708
   |
   `-- UART, 115200 baud ---------------- ESP32 on Waveshare HAT (A)
                                               |

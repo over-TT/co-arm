@@ -8,6 +8,11 @@ toolchains, build outputs, firmware backups, tokens, SSH material, service logs,
 retained camera frames, screenshots, local caches, account state, and the raw
 chronological agent handoff.
 
+Generated engineering reports are also excluded until they can be regenerated
+without personal paths and with fonts/assets whose redistribution terms are
+understood. A PDF or screenshot is not made public merely because its
+underlying source is public.
+
 The public history was rebuilt from the current arm contract and dated proof
 records. Installation-specific values were removed rather than replaced with
 plausible-looking examples.
@@ -26,8 +31,11 @@ plausible-looking examples.
 ## Hardware and CAD provenance
 
 Vendor and product names identify compatibility targets and remain the property
-of their owners. Before CAD or STL files are added, record whether each file is
-original, adapted, or redistributed, and include its source URL, author,
-original license, modifications, and revision.
+of their owners.
 
-No CAD provenance has been asserted yet because the files have not been added.
+All 12 current 3MF parts were supplied directly by the project owner on
+2026-08-26. Their archives contain model titles/revisions and geometry but no
+author name, source URL, or third-party license metadata. Before publishing or
+licensing them, confirm whether every mesh is fully original or adapted from
+another source. If anything was adapted, record its source, author, license,
+changes, and revision in `hardware/3mf/README.md`.

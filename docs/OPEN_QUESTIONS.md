@@ -1,13 +1,11 @@
 # Open owner questions
 
-These are the decisions or observations that should be supplied by the project
-owner. Unknown values are intentionally not guessed.
+These are the few project details still waiting to be filled in.
 
 ## Blocking the first public release
 
-- [ ] Keep the first GitHub push private, or make the repository public?
-- [ ] Include only documentation/CAD/media, or also publish the extracted
-  firmware, Raspberry Pi gateway, MCP server, and dashboard?
+- [ ] Decide whether and when the existing private GitHub repository should be
+  made public.
 - [ ] Choose the public creator/organization name, or choose no public credit.
 - [ ] Choose licenses for software, hardware/CAD, documentation, and media.
 - [ ] Confirm whether future CAD/STLs are entirely original or derived from
@@ -19,19 +17,24 @@ owner. Unknown values are intentionally not guessed.
 - [ ] Photograph the SC09 camera servo label.
 - [ ] Photograph both sides and the printed revision of the servo HAT.
 - [ ] Photograph the power-supply label.
-- [ ] Confirm the camera board/revision label.
-- [ ] Confirm the actual Base gear tooth counts or measured ratio.
+- [ ] Photograph and confirm the Camera Module 3 Wide board/revision label.
+- [x] Record the Base gear pair: 52-tooth printed ring and 13-tooth printed
+  servo gear for 4:1 reduction.
+- [x] Add the current 13-tooth Base-servo gear file.
 
 ## Reproducible mechanical build
 
-- [ ] List every printed part and its revision.
-- [ ] List every fastener, nut, washer, spacer, bearing, insert, and cable tie.
+- [x] Add and index all 12 current printed parts.
+- [x] Name the lower/upper links and record the bearing-bottom placement.
+- [ ] Send the large Base bearing details.
+- [ ] Add the heat-set insert and M3 screw list.
+- [ ] Add the remaining nuts, washers, spacers, shafts, horns, and cable ties.
 - [ ] Record material, nozzle, layer height, wall count, infill, support, and
   orientation for every printed part.
 - [ ] Record the actual arm mass and maximum intended payload.
-- [ ] Export native CAD, STEP, STL, and dimensioned drawings.
+- [ ] Add the remaining CAD, drawings, and exports when ready.
 
-## Electrical and safety
+## Electrical and power
 
 - [ ] Confirm connector types, wire gauges, polarity, and wiring colors.
 - [ ] Confirm fuse or circuit-protection details.

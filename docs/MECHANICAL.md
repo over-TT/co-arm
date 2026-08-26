@@ -1,148 +1,71 @@
 # Mechanical design
 
-This document describes the current co-arm mechanical model and the information
-needed to turn it into a reproducible build. The exact printed-part geometry,
-materials, hardware stack, and assembly tolerances are not yet exported, so this
-is deliberately explicit about what is known and what still needs inspection.
+co-arm is a four-joint printed camera arm. The Base, gears, links, servo mounts,
+covers, and camera holder are all part of the build.
 
-## Axis layout
+## Joint layout
 
-| Axis | Motion | Actuator | Logical ID | Notes |
-| --- | --- | --- | ---: | --- |
-| Base | Yaw around vertical | ST3215/STS-family | 1 | 4:1 external reduction |
-| Shoulder | Upper-arm pitch | ST3215/STS-family | 2 | Drives the 180 mm upper link |
-| Elbow | Distal-link pitch | ST3215/STS-family | 3 | Drives the 220 mm elbow-to-tip span |
-| Camera | Camera pitch | SC09/SCS-family | 4 | Auxiliary axis; excluded from arm IK |
-
-The base ratio is recorded as **4 motor turns : 1 output turn**. One motor turn
-therefore corresponds to 90 degrees of base output motion. Record tooth counts,
-gear pitch/module, gear centre distance, backlash, and retention method when the
-native CAD is added; the ratio alone is not enough to reproduce the mechanism.
-
-## Reference geometry
-
-All public CAD and drawings use millimetres.
-
-| Symbol | Dimension | Recorded value |
+| Joint | What it moves | Servo ID |
 | --- | --- | ---: |
-| `H_base` | Work surface to base/shoulder pivot reference | 60 mm |
-| `L_upper` | Shoulder pivot to elbow pivot | 180 mm |
-| `L_forearm` | Elbow pivot to distal offset origin | 180 mm |
-| `L_tool` | Camera/tool offset | 40 mm |
-| `L_distal` | Elbow pivot to camera/tool tip | 220 mm |
+| Base | Turns the whole arm | 1 |
+| Shoulder | Lower arm link | 2 |
+| Elbow | Upper arm link | 3 |
+| Camera | Camera angle | 4 |
 
-The software model treats the physical link-plate offset as already included in
-these link lengths. Do not add a second offset term without a new measurement
-and a coordinated model revision.
+The Camera joint only aims the sensor. Shoulder and Elbow place it, and Base
+turns the whole mechanism.
 
-Ignoring joint limits, collision envelopes, base structure, and cable limits,
-the two-link planar chain has:
+## Printed Base
 
-- nominal maximum shoulder-to-tip distance: `180 + 220 = 400 mm`;
-- nominal inner dead-zone radius: `|220 - 180| = 40 mm`.
+The main Base print has the 52-tooth gear built into it. A separate 13-tooth
+gear fits the Base servo, giving the arm its 4:1 reduction.
 
-Those are geometric calculations, not a certified workspace. Actual reach must
-be derived from as-built joint limits, swept-volume checks, link thickness,
-camera envelope, wiring, and base anchoring.
+From bottom to top, the Base stack is:
 
-## Coordinate and zero conventions
+1. Base with the large gear;
+2. bearing-bottom piece;
+3. large bearing;
+4. Shaft Base;
+5. Level 2 platform with the lower-arm servo and mount.
 
-Use a right-handed assembly coordinate system for new CAD:
+## Arm and camera
 
-- origin: centre of the base yaw axis at the work-surface reference plane;
-- `+Z`: upward;
-- `+X`: forward when Base is at its physical zero mark;
-- `+Y`: completes the right-handed frame;
-- positive Base motion: document with a drawing after viewing the arm from
-  `+Z`; do not infer it from a motor-shaft view.
+The lower link runs from the lower-arm servo to the next joint. The upper link
+runs from there to the camera end. The top-servo cover closes the upper servo
+area.
 
-Current servo-space conventions:
+At the end of the upper link, the camera-servo mount holds the camera servo. The
+camera holder attaches to that servo, and the camera cover closes the holder.
 
-- Base is yaw; its zero depends on the physical base mark.
-- Shoulder `0 deg` points the upper arm straight up; negative values tilt it
-  forward.
-- With Shoulder `0 deg`, Elbow `0 deg` forms the recorded folded-middle/L
-  posture; Shoulder `0 deg` plus Elbow `90 deg` is the straight convention used
-  by the current model.
-- Camera `0 deg` looks along the forearm; positive aims down and negative aims
-  up.
+All 12 files are listed in
+[`hardware/3mf/README.md`](../hardware/3mf/README.md).
 
-These are control conventions, not a replacement for assembly mates. Each CAD
-assembly must include named zero-reference planes and a drawing showing the
-view direction for positive rotation.
+## Dimensions used by the software
 
-## Mechanical datum and measurement plan
+| Measurement | Value |
+| --- | ---: |
+| Base pivot height | 60 mm |
+| Shoulder to Elbow | 180 mm |
+| Elbow to camera offset | 180 mm |
+| Camera offset | 40 mm |
+| Elbow to camera tip | 220 mm |
 
-Before final export, create or confirm these datums:
+These are the dimensions used by the current arm software. I still need to
+measure the final printed assembly and add the remaining hardware details.
 
-1. `D0_WORK_SURFACE` — underside/base contact plane or the actual bench plane.
-2. `A1_BASE_YAW` — Base output axis.
-3. `A2_SHOULDER_PITCH` — Shoulder output axis.
-4. `A3_ELBOW_PITCH` — Elbow output axis.
-5. `A4_CAMERA_PITCH` — Camera-servo output axis.
-6. `P_TOOL_TIP` — the camera/tool reference point used for the 220 mm distal
-   dimension.
-7. `P_BASE_ZERO` — visible mechanical Base-zero alignment mark.
+## Joint zero positions
 
-For each measured dimension, record the tool and uncertainty in a drawing note.
-Example: `180.0 mm nominal; verify centre-to-centre with calipers, +/-0.5 mm`.
-Do not publish a tolerance until it has been chosen for the manufacturing method
-and checked against the assembled arm.
+- Base zero lines up with the physical mark on the Base.
+- Shoulder zero points the lower link straight up.
+- Elbow zero is the folded-middle position used by the current arm model.
+- Camera zero looks along the upper link.
 
-## Part breakdown to preserve in CAD
+With torque off, Shoulder and Elbow can sag. Hold the arm or rest it on
+something before releasing torque.
 
-The native assembly should separate at least these functional groups, even if
-the exact part names differ:
+## Still to add
 
-- base mounting structure;
-- Base motor mount, driven gear, pinion, output hub/shaft, bearings/bushings,
-  and retaining hardware;
-- shoulder servo mount and upper-link structure;
-- elbow servo mount and distal-link structure;
-- camera-servo mount and camera bracket;
-- Raspberry Pi/HAT enclosure or mounting plate;
-- power and cable-routing clips/guards;
-- purchased hardware represented as reference components.
-
-Do not fuse purchased actuators or fasteners into printable bodies. Suppress
-them only for exports where the README explicitly says they are excluded.
-
-## Structural and motion checks before release
-
-- Confirm the base is positively anchored and cannot tip at maximum reach.
-- Confirm shafts/horns are captured axially and fasteners cannot back out into a
-  moving gear or link.
-- Check every joint through its intended range with power removed and links
-  supported.
-- Measure hard-stop locations separately from software limits.
-- Check the complete swept volume, including servo cases, screw heads, camera,
-  ribbon cable, connectors, and wire loops.
-- Confirm camera ribbon and servo cables retain slack without entering gears or
-  pinch points.
-- Check backlash and link deflection at multiple reaches before declaring a
-  payload.
-- Do not infer load capacity from an actuator's marketing torque figure.
-
-## Open mechanical record
-
-- **TODO (owner verification):** exact CAD source application and native file
-  format.
-- **TODO (owner verification):** printed-part list and which revision is
-  currently installed.
-- **TODO (owner verification):** filament/resin type, manufacturer, color, and
-  any annealing or post-processing.
-- **TODO (owner verification):** print orientation, nozzle, layer height, wall
-  count, top/bottom layers, infill type/percentage, support settings, and fit
-  compensation.
-- **TODO (owner verification):** every fastener's standard, thread, length,
-  head style, grade/material, quantity, washer/nut/insert, and torque where
-  appropriate.
-- **TODO (owner verification):** bearing/bushing, shaft, gear, servo-horn, and
-  spacer specifications.
-- **TODO (owner verification):** actual joint limits, hard-stop clearances,
-  base footprint, mounting-hole pattern, overall stowed dimensions, mass, and
-  centre of gravity.
-- **TODO (owner verification):** repeatable payload and deflection test method.
-
-Place native CAD, neutral STEP, printable STL, and drawings according to
-[`CAD_AND_STL.md`](CAD_AND_STL.md).
+- large Base bearing and remaining shaft/horn details;
+- heat-set insert and M3 screw list;
+- material and print settings;
+- final joint limits, cable clearance, weight, and tested payload.

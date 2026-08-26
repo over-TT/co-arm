@@ -1,0 +1,20 @@
+{
+  "name": "co-arm",
+  "interface": {
+    "displayName": "Co Arm"
+  },
+  "plugins": [
+    {
+      "name": "arm-alliance",
+      "source": {
+        "source": "local",
+        "path": "./plugins/arm-alliance"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

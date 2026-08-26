@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=83", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "co-arm-stack"
+version = "0.1.0"
+description = "ARM-only Raspberry Pi gateway, dashboard backend, MCP server, and simulation packages"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi==0.141.1",
+  "httpx==0.28.1",
+  "Pillow==12.3.0",
+  "pydantic==2.13.4",
+  "pyserial==3.5",
+  "starlette==1.6.0",
+  "uvicorn==0.35.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest==9.0.3"]
+
+[project.scripts]
+co-arm-dashboard = "web_backend.runtime:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["arm_mcp*", "arm_sim*", "robot_gateway*", "web_backend*"]
+exclude = [
+  "arm_mcp.tests*",
+  "arm_sim.tests*",
+  "robot_gateway.tests*",
+  "web_backend.tests*",
+]
+
+[tool.setuptools.package-data]
+arm_sim = ["assets/*.urdf", "config/*.json"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["arm_mcp/tests", "robot_gateway/tests", "arm_sim/tests", "web_backend/tests"]

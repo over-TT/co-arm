@@ -1,95 +1,95 @@
-# Software source release plan
+# Public source boundary
 
-The documentation tree is clean, but the working arm software originated in a
-larger private application. Copying that whole workspace would publish unrelated
-code, local state, generated binaries, and personal installation details. A
-source release therefore needs an explicit allowlist and a clean-checkout test.
+The ARM implementation is now exported into this repository. This document
+records the boundary so later updates do not copy the broader development
+workspace or private runtime state back into Git.
 
-## Recommended first release boundary
+## Included allowlist
 
-For the first private review commit, publish this documentation, hardware/CAD
-scaffold, media workflow, and repository checks. Add executable source only
-after the owner confirms scope and licensing.
+The standalone source root is `software/`:
 
-## Portable source candidates
+| Area | Public path |
+| --- | --- |
+| Dashboard | `software/dashboard/` |
+| ARM-only FastAPI backend | `software/python/web_backend/` |
+| Raspberry Pi gateway | `software/python/robot_gateway/` |
+| MCP server | `software/python/arm_mcp/` |
+| Core Isaac simulator/digital twin | `software/python/arm_sim/` |
+| Arm HAT firmware | `software/firmware/` |
+| Portable Codex plugin | `software/plugin/` |
+| Deployment/diagnostic helpers | `software/operations/` |
+| Public source map | `software/SOURCE_INDEX.json` |
+| Deterministic source snapshot | `software/SOURCE_MANIFEST.json` |
 
-The strongest candidates for a later allowlisted export are:
+Focused tests, fixtures, configuration templates, model assets, package
+manifests, and lockfiles needed to build or test these areas are part of the
+allowlist. Machine-specific values must be passed through local configuration,
+environment variables, or ignored token/data files.
 
-- the complete clean Raspberry Pi `robot_gateway` Python package and its tests;
-- the ESP32 Arm HAT sketch and `ArmHatController` library;
-- the arm-specific firmware host tests and a rewritten current protocol spec;
-- the canonical Arm MCP server, with portable configuration templates;
-- a small arm-only deployment template and dependency manifests.
+## Explicit exclusions
 
-Preserve complete packages rather than selecting individual Python modules:
-the gateway runtime imports state, calibration, simulation, camera, physical
-commissioning, and simple-arm modules across the package.
+Never copy these from a development or deployed machine:
 
-### Audited parent-source allowlist
+- tokens, credentials, private keys, SSH config/known-host state, or account
+  metadata;
+- runtime databases, WAL/SHM files, chats, transcripts, operator memory, or
+  agent homes;
+- camera captures, retained frames, screenshots, raw audio, or personal desk
+  content unless separately reviewed for `media/`;
+- backups, SD-card images, installed services, generated simulation output,
+  caches, logs, `node_modules/`, build output, or bundled toolchains;
+- private endpoints, usernames, device/controller/session/frame identifiers,
+  live poses, or calibration state from the reference machine;
+- unrelated UI, backend routes, products, or tests from the parent workspace;
+- unrelated product features, embedded agent runtimes, and superseded simulator
+  branches;
+- generated reports until they are regenerated without personal paths and with
+  redistributable fonts/assets.
 
-If the owner approves a software release, begin from this reviewed relative
-source set and sanitize it into the reserved `software/` tree:
+The public plugin contains portable instructions only. The setup runbook
+registers `python -m arm_mcp` with an absolute project-venv interpreter and
+machine-local configuration, so no interpreter, endpoint, or token path is
+copied into Git.
 
-| Parent source | Intended public destination | Notes |
-| --- | --- | --- |
-| `robot_gateway/**/*.py` and `robot_gateway/tests/**/*.py` | `software/gateway/robot_gateway/` | Copy the clean package as a unit; exclude caches |
-| `firmware/esp32/arm_hat_controller/arm_hat_controller.ino` | `software/firmware/arm_hat_controller/` | Current ESP32 sketch |
-| `firmware/libraries/ArmHatController/` | `software/firmware/libraries/ArmHatController/` | Fix author/maintainer metadata after attribution is chosen |
-| Arm-specific firmware host tests and stubs under `protocol/tests/` | `software/firmware/tests/` | Exclude unrelated board/MCUCP tests |
-| `ARM/mcp/server.py` and its focused tests | `software/mcp/` | Add portable config; never copy installed `.mcp.json` |
-| `deploy/arm-gateway.service` | `software/gateway/deploy/` | Add a documented opt-in physical-UART drop-in template |
-| Pi/web dependency manifests | relevant software folder | Split arm runtime dependencies from the parent app |
+## Adaptations made for standalone use
 
-The old public-looking protocol and Pi setup pages in the parent workspace are
-not safe to copy verbatim: they describe earlier firmware/deployment states.
-Rewrite them against the exported 2.4 source.
+- The complete Arm UI has its own Vite/React shell and package manifest.
+- The FastAPI app contains only arm, camera, backend, session, and Control
+  Center routes and serves the built dashboard on loopback.
+- Real and simulated gateway configuration is request-scoped and fails closed
+  when required local configuration is absent.
+- The supported agent path is `AGENTS.md`, the setup runbook, and the external
+  MCP/plugin; no embedded Codex runtime is bundled.
+- Source-identity and Control Center paths are relative to this repository.
+- The Pi gateway, MCP server, core Isaac simulator, Arm HAT firmware, plugin,
+  and operations files preserve their ARM responsibility without duplicate
+  source trees.
 
-## Components that are not standalone yet
+## Update procedure
 
-### Dashboard
+1. Start from the canonical ARM source map in the private workspace.
+2. Copy only the documented allowlist into the matching public path.
+3. Reapply the standalone adaptations instead of copying parent-app entry
+   points or private configuration.
+4. Review the diff for new dependencies, routes, runtime-file types, identifiers,
+   and non-ARM imports.
+5. Update `software/SOURCE_INDEX.json`, public docs, changelog, and third-party
+   notices, then regenerate `software/SOURCE_MANIFEST.json` with
+   `python tools/build_source_manifest.py`.
+6. Run `python tools/build_source_manifest.py --check`, the repository checker,
+   Python suites, dashboard tests/build, firmware
+   host tests, and any source-index/snapshot verifier.
+7. Inspect the clean Git diff and history before pushing.
 
-The Arm React components currently build inside a broader application entry
-point. A public source release needs its own entry component, styles, package
-metadata, test setup, and API configuration before it can be described as a
-standalone dashboard.
+## Publication gates
 
-### Local backend and embedded Arm Chat
+A source-complete tree is not automatically ready for public reuse. Publication
+still requires:
 
-The parent backend also owns board discovery, Arduino toolchains, a bundled
-Codex runtime, application state, and frontend distribution. Copying its Arm
-files alone does not create a runnable service. Extract an arm-only proxy and
-chat supervisor, or publish a documented interface without claiming a working
-standalone backend.
-
-### Codex plugin
-
-The installed plugin configuration contains installation-specific executable,
-workspace, token-file, and frame-directory paths. Publish only a disabled or
-placeholder template that requires explicit local configuration. Never publish
-the installed configuration.
-
-## Files and data excluded from any source export
-
-- private chronological handoffs and agent transcripts;
-- runtime tokens, sessions, known-hosts data, retained camera frames, and logs;
-- device factory firmware backups;
-- generated binaries, objects, maps, caches, and bundled toolchains;
-- private network and controller identifiers;
-- legacy raw-register diagnostic scripts that can change servo configuration;
-- account state or personal AI memory.
-
-## Clean source release gates
-
-1. Define the copied paths in a machine-readable source manifest.
-2. Replace local paths and fixed endpoints with environment/config templates.
-3. Rewrite stale protocol and deployment documentation from current source.
-4. Install dependencies from documented manifests in a fresh checkout.
-5. Run gateway, MCP, firmware host, frontend, typecheck, and build checks that
-   actually apply to the exported tree.
-6. Compile the Arm HAT firmware with a documented system Arduino CLI and pinned
-   ESP32 core; do not rely on the private bundled toolchain.
-7. Run repository, secret, path, link, and file-size checks.
-8. Report source/build evidence separately from live-device evidence.
-
-Historical parent-workspace checks are summarized in [`STATUS.md`](STATUS.md),
-but they are not a substitute for a green clean-checkout source release.
+- green checks for the exact clean checkout;
+- manual review of Git history and generated lockfiles/manifests;
+- explicit software, hardware/CAD, documentation, and media license decisions;
+- complete third-party notices for anything redistributed;
+- privacy/provenance review of any added media, CAD, or reports;
+- release notes that keep source/build results separate from dated live-device
+  and physical evidence.

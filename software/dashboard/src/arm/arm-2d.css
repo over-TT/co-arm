@@ -1,0 +1,100 @@
+/* Owned by Arm2D.tsx and imported there, same as arm-viewport.css — a stylesheet
+   that lives with another component gets tree-shaken out the moment that one
+   stops being mounted. */
+.arm2d {
+  --arm-cyan: #83c4dc;
+  --arm-cyan-dim: #17313c;
+
+  display: grid;
+  flex: 1;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 250px);
+  min-height: 0;
+  padding: 15px 17px 10px;
+}
+
+/* The dials own one scrolling column. They used to be grid children flowing
+   down the page, which put the second dial past the bottom of a 720px window
+   with nothing to scroll -- present in the DOM, invisible and unreachable.
+   min-height:0 is what lets a flex child actually scroll instead of growing. */
+.arm2d-dials { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow-y: auto; }
+
+.arm2d-pane { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.arm2d-pane h3 { color: var(--text-muted); font-size: .68rem; letter-spacing: .06em; margin: 0 0 7px; text-transform: uppercase; }
+.arm2d-pane p { color: var(--text-muted); font-size: .68rem; margin: 7px 0 0; }
+.arm2d-pane output { color: var(--arm-cyan); display: block; font: 700 1.3rem "Cascadia Code", monospace; margin-top: 9px; text-align: center; }
+
+/* min-height is a floor, not a preference: with flex:1 and no floor the canvas
+   collapsed to a ~28px strip on a narrow window and the grips went with it. */
+.arm2d-side, .arm2d-dial { background: #0b1014; border: 1px solid #26323b; display: block; flex: 1; min-height: 240px; touch-action: none; user-select: none; width: 100%; }
+/* Square, and sized by the column rather than by a floor meant for the side
+   view. The SVG letterboxes cleanly (xMidYMid meet) and `inSvg` already undoes
+   that, so shrinking it does not move the grips out from under the cursor. */
+.arm2d-dial { aspect-ratio: 1; flex: none; min-height: 0; }
+
+.arm2d-floor { stroke: #30404b; stroke-dasharray: 5 6; stroke-width: 1; }
+/* Where the arm is not allowed to go. Warm against the cyan the rest of the
+   scene uses, so it reads as a barrier and not as another reach envelope. */
+.arm2d-keepout { fill: #ff6b4a; fill-opacity: .10; stroke: none; }
+.arm2d-keepout-edge { stroke: #ff6b4a; stroke-opacity: .55; stroke-width: 1.5; }
+.arm2d-reach { fill: none; stroke: #24313a; stroke-dasharray: 3 7; stroke-width: 1; }
+.arm2d-mark { stroke: var(--arm-cyan); stroke-opacity: .55; stroke-width: 2; }
+.arm2d-mark-label { fill: var(--arm-cyan); fill-opacity: .7; font: 10px "Cascadia Code", monospace; }
+.arm2d-column { stroke: #46545f; stroke-linecap: round; stroke-width: 11; }
+.arm2d-link { stroke: #cbd7df; stroke-linecap: round; stroke-width: 13; }
+.arm2d-sequence-path { fill: none; stroke: var(--arm-cyan); stroke-dasharray: 3 7; stroke-opacity: .48; stroke-width: 2; }
+.arm2d-sequence-link { stroke: var(--arm-cyan); stroke-linecap: round; stroke-opacity: .18; stroke-width: 5; }
+.arm2d-sequence-node { fill: #0b1014; stroke: var(--arm-cyan); stroke-opacity: .75; stroke-width: 1.5; }
+.arm2d-sequence-number { fill: var(--arm-cyan); font: 700 9px "Cascadia Code", monospace; }
+/* Plans are annotations, not telemetry. The dashed cyan skeleton remains
+   visually distinct even when it nearly overlaps the measured steel arm. */
+.arm2d-plan-link { fill: none; stroke: var(--arm-cyan); stroke-dasharray: 8 7; stroke-linecap: round; stroke-width: 7; }
+.arm2d-pivot { fill: #26343e; stroke: #cbd7df; stroke-width: 2.5; }
+.arm2d-range { fill: var(--arm-cyan); fill-opacity: .07; stroke: var(--arm-cyan); stroke-opacity: .22; stroke-width: 1; }
+.arm2d-dial-face { fill: none; stroke: #30404b; stroke-width: 1.5; }
+/* Reads as an annotation on the drawing, not as another control. */
+.arm2d-readout { fill: var(--arm-cyan); fill-opacity: .85; font: 600 13px "Cascadia Code", monospace; pointer-events: none; }
+.arm2d-needle { stroke: var(--arm-cyan); stroke-linecap: round; stroke-width: 4; }
+.arm2d-plan-needle { stroke: #e1f7ff; stroke-dasharray: 6 5; stroke-linecap: round; stroke-width: 3; }
+
+/* The whole point of this view is that the joints are grabbable, so the handles
+   are large, always visible, and obviously the thing to aim at. */
+.arm2d-grip { cursor: grab; fill: var(--arm-cyan-dim); fill-opacity: .85; stroke: var(--arm-cyan); stroke-width: 2.5; }
+/* The primary handle. It moves the whole arm, so it reads as the main target. */
+.arm2d-grip.is-tip { fill: #1d4757; stroke-width: 3.5; }
+.arm2d-grip:active { cursor: grabbing; }
+.arm2d-grip:hover { fill-opacity: 1; }
+.arm2d-grip:focus-visible { outline: 2px solid var(--arm-cyan); outline-offset: 2px; }
+.arm2d.is-disabled .arm2d-grip { cursor: not-allowed; opacity: .45; }
+
+/* No zero yet, so there is no angle to drag to. Drawn dimmed rather than hidden:
+   an absent dial gave no clue that calibration was the missing step. */
+.arm2d-pane.is-pending .arm2d-dial { opacity: .4; }
+.arm2d-pane.is-pending .arm2d-grip { cursor: not-allowed; }
+.arm2d-pane.is-pending output { color: var(--text-muted); font-size: .8rem; }
+
+@media (max-width: 900px) {
+  .arm2d { grid-auto-rows: auto; grid-template-columns: minmax(0, 1fr); }
+  /* One column now, so the dial strip stops being a scroller and just stacks;
+     the page scrolls instead, which is what a narrow window wants. */
+  .arm2d-dials { overflow-y: visible; }
+  .arm2d-pane.is-dial { align-items: center; }
+  .arm2d-pane.is-dial svg { max-width: 220px; }
+}
+
+/* At common 125-150% Windows scaling a nominally wide screen can have less
+   than 850 CSS pixels of height. Put the two compact dials side by side instead
+   of giving them a second scrollbar, and bound the side drawing near its own
+   480:380 aspect ratio so it does not become a huge letterboxed banner. */
+@media (min-width: 901px) and (max-height: 850px) {
+  .arm2d { gap: 10px; grid-template-columns: minmax(0, 1fr) minmax(280px, 320px); padding: 10px 12px 8px; }
+  .arm2d > .arm2d-pane:first-child { align-items: center; }
+  .arm2d > .arm2d-pane:first-child > h3,
+  .arm2d > .arm2d-pane:first-child > p { align-self: stretch; }
+  .arm2d-side { align-self: center; min-height: 220px; width: min(100%, 70vh); }
+  .arm2d-dials { align-content: start; display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: hidden; }
+  .arm2d-pane.is-dial { min-width: 0; }
+  .arm2d-pane.is-dial h3 { margin-bottom: 4px; }
+  .arm2d-pane.is-dial output { font-size: 1rem; margin-top: 4px; }
+  .arm2d-dial { justify-self: center; max-width: 140px; }
+}

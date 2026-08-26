@@ -77,6 +77,32 @@ states the actual optical limit: the installed sensor module is fixed focus.
 For it, useful focus comes from choosing standoff and judging visible subject
 detail, not pretending software can actuate a lens.
 
+## 2026-08-22 to 2026-08-23 — Camera Module 3 and Live Follow
+
+The reference camera changed to Camera Module 3 Wide / IMX708. Survey/detail
+profiles, sensor/array validation, powered autofocus controls, and same-capture
+AF evidence were added while retaining OV5647 only as a legacy compatibility
+profile.
+
+Shoulder/Elbow Live Follow gained a separate strict heartbeat, bounded grouped
+dispatch, exact goal readback, dead-man/lease behavior, and start-relative
+travel envelopes. After the installed servos were shown to store acceleration
+`50` when a higher value was requested, every current layer adopted `1..50` as
+the explicit arm-specific range. Five- and twelve-second unloaded runs then
+completed on matching Arm HAT 2.7.2, Pi, and dashboard code. The raw settings
+were not treated as calibrated speed.
+
+## 2026-08-24 — ARM-only public source export
+
+The standalone dashboard/backend, Pi gateway, Arm HAT firmware, core Isaac
+simulator, MCP/plugin, operations helpers, and focused tests were extracted from
+the broader development workspace. Machine-specific configuration, credentials,
+runtime data, captures, reports, backups, generated artifacts, and unrelated UI
+were excluded. Unrelated product and evaluation additions were then removed to
+keep the public package focused on building, simulating, commissioning, and
+running the arm. Clean-checkout tests remain source evidence, not a new hardware
+verification.
+
 ## Current lesson
 
 The project became more reliable whenever it replaced inferred state with

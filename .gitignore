@@ -15,8 +15,11 @@ Thumbs.db
 *known-hosts*
 
 # Python, Node, and build output
+.venv/
+venv/
 __pycache__/
 *.py[cod]
+*.egg-info/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -28,6 +31,13 @@ target/
 coverage/
 *.log
 *.tmp
+*.db
+*.ndjson
+*.jsonl
+*.shm
+*.sqlite
+*.sqlite3
+*.wal
 
 # Generated firmware and device backups
 *.bin
@@ -39,6 +49,10 @@ coverage/
 *.o
 *.a
 device-backups/
+backups/
+pi-backups/
+*.img
+*.iso
 
 # Private working media; only reviewed exports belong in tracked media folders
 media/raw/
@@ -47,9 +61,11 @@ media/private/
 
 # Local runtime and tooling
 runtime/
+software/python/arm_sim/generated/
 output/
 artifacts/
 toolchains/
+reports/rendered*/
 .pnpm-store/
 .playwright-cli/
 .shots/

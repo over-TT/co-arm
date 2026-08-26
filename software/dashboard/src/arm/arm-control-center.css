@@ -1,0 +1,339 @@
+.armcc {
+  --armcc-canvas: #181818;
+  --armcc-chrome: #1f2023;
+  --armcc-panel: #202020;
+  --armcc-hover: #262626;
+  --armcc-control: #2a2a2a;
+  --armcc-inset: #141414;
+  --armcc-border: rgba(255, 255, 255, .08);
+  --armcc-border-strong: rgba(255, 255, 255, .14);
+  --armcc-text: #ececec;
+  --armcc-text-secondary: #b5b5b5;
+  --armcc-text-muted: #aaaaaa;
+  --armcc-accent: #74aee0;
+  --armcc-accent-dim: rgba(116, 174, 224, .12);
+  --armcc-success: #79a98b;
+  --armcc-warning: #c0a06b;
+  --armcc-danger: #cf7f86;
+  background: var(--armcc-canvas);
+  color: var(--armcc-text);
+  color-scheme: dark;
+  display: grid;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  line-height: 21px;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.armcc *,
+.armcc *::before,
+.armcc *::after { box-sizing: border-box; }
+.armcc button { border-radius: 8px; touch-action: manipulation; }
+.armcc code { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; }
+.armcc :where(button, input, select):focus-visible { outline: 2px solid var(--armcc-accent); outline-offset: 2px; }
+.armcc :where(.armcc-header, .armcc-page) button {
+  background: var(--armcc-control);
+  border: 1px solid var(--armcc-border-strong);
+  color: var(--armcc-text);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  min-height: 36px;
+  padding: 8px 12px;
+}
+.armcc :where(.armcc-header, .armcc-page) button:hover:not(:disabled) { background: var(--armcc-hover); border-color: rgba(255, 255, 255, .2); }
+.armcc :where(.armcc-header, .armcc-page) button:disabled { cursor: not-allowed; opacity: .45; }
+
+/* Application toolbar */
+.armcc-header {
+  align-items: stretch;
+  background: var(--armcc-chrome);
+  border-bottom: 1px solid var(--armcc-border);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: auto auto minmax(16px, 1fr) auto auto auto;
+  height: 54px;
+  padding: 0 14px;
+  position: relative;
+  z-index: 5;
+}
+.armcc-title-lockup { align-items: center; display: flex; min-width: 0; white-space: nowrap; }
+.armcc-title-lockup strong { font-size: 14px; font-weight: 600; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; }
+.armcc-toolbar-spacer { min-width: 0; }
+.armcc-tabs { align-items: stretch; display: flex; }
+.armcc-tabs button {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  color: var(--armcc-text-muted);
+  min-height: 0;
+  padding: 0 11px;
+}
+.armcc-tabs button:hover:not(:disabled) { background: var(--armcc-hover); border-color: transparent; color: var(--armcc-text-secondary); }
+.armcc-tabs button[aria-selected="true"] { border-bottom-color: rgba(255, 255, 255, .4); color: var(--armcc-text); }
+.armcc-tabs button:disabled { color: #606060; opacity: 1; }
+.armcc-isaac-launch { align-self: center; background: transparent !important; color: var(--armcc-text-secondary) !important; min-height: 34px !important; padding: 7px 10px !important; white-space: nowrap; }
+.armcc-isaac-launch:hover:not(:disabled) { color: var(--armcc-text) !important; }
+.armcc-isaac-launch[aria-busy="true"] { cursor: progress; }
+.armcc-isaac-label-short { display: none; }
+.armcc-backend { align-items: center; display: flex; gap: 8px; min-width: 0; }
+.armcc-segmented {
+  background: var(--armcc-inset);
+  border: 1px solid var(--armcc-border);
+  border-radius: 8px;
+  display: grid;
+  flex: none;
+  grid-template-columns: 1fr 1fr;
+  padding: 2px;
+}
+.armcc-segmented.is-empty { grid-template-columns: 1fr; }
+.armcc-segmented button {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--armcc-text-muted);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  min-height: 28px;
+  min-width: 46px;
+  padding: 4px 8px;
+}
+.armcc-segmented button:hover:not(:disabled) { background: var(--armcc-hover); border-color: transparent; color: var(--armcc-text-secondary); }
+.armcc-segmented button[aria-pressed="true"] { background: var(--armcc-control); border-color: var(--armcc-border-strong); color: var(--armcc-text); }
+.armcc-segmented button[aria-pressed="true"]::after { background: var(--armcc-accent); border-radius: 50%; content: ""; display: inline-block; height: 5px; margin-left: 6px; vertical-align: 1px; width: 5px; }
+.armcc-backend-status { align-items: center; color: var(--armcc-text-muted); display: flex; gap: 7px; min-width: 0; }
+.armcc-backend-status strong { font-size: 12px; font-weight: 500; line-height: 16px; white-space: nowrap; }
+.armcc-status-dot { background: var(--armcc-text-muted); border-radius: 50%; flex: none; height: 7px; width: 7px; }
+.armcc-status-dot.is-ready { background: var(--armcc-success); }
+.armcc-status-dot.is-configured { background: var(--armcc-text-muted); }
+.armcc-status-dot.is-starting,
+.armcc-status-dot.is-loading { animation: armcc-pulse 1.3s ease-in-out infinite; background: var(--armcc-warning); }
+.armcc-status-dot.is-offline,
+.armcc-status-dot.is-error { background: var(--armcc-danger); }
+
+/* Transient toolbar feedback floats over the workspace and never changes layout. */
+.armcc-notices {
+  display: grid;
+  gap: 6px;
+  max-width: min(460px, calc(100% - 24px));
+  pointer-events: none;
+  position: absolute;
+  right: 12px;
+  top: 62px;
+  width: max-content;
+  z-index: 8;
+}
+.armcc-notices:empty { display: none; }
+.armcc-notices > * {
+  background: var(--armcc-panel);
+  border: 1px solid var(--armcc-border-strong);
+  border-radius: 8px;
+  color: var(--armcc-text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+  margin: 0;
+  max-width: 460px;
+  padding: 9px 11px;
+  pointer-events: auto;
+}
+.armcc-backend-lock strong { color: var(--armcc-text); font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 11px; }
+.armcc-backend-note { border-left: 2px solid var(--armcc-warning); }
+.armcc-global-action-message { border-left: 2px solid var(--armcc-accent); }
+.armcc-isaac-runtime-notice .armcc-action-runtime { margin: 0; }
+
+.armcc-main { min-height: 0; overflow: auto; }
+.armcc-main.is-control { overflow: hidden; }
+.armcc-panel { min-height: 100%; }
+.armcc-main.is-control .armcc-panel { height: 100%; min-height: 0; }
+.armcc-page { margin: 0 auto; max-width: 1180px; padding: 28px 32px 44px; }
+
+/* Overview */
+.armcc-overview-page { max-width: 920px; }
+.armcc-page-header { align-items: flex-start; display: flex; gap: 24px; justify-content: space-between; margin-bottom: 18px; }
+.armcc-page-header h1 { font-size: 22px; font-weight: 600; letter-spacing: -.02em; line-height: 28px; margin: 0; }
+.armcc-page-header p { color: var(--armcc-text-secondary); font-size: 14px; line-height: 21px; margin: 4px 0 0; }
+.armcc-page-actions { display: flex; flex: none; gap: 8px; }
+.armcc-page-actions .armcc-button-secondary,
+.armcc .armcc-button-secondary { background: transparent; color: var(--armcc-text-secondary); }
+.armcc .armcc-button-secondary:hover:not(:disabled) { color: var(--armcc-text); }
+.armcc-environment-panel { background: var(--armcc-panel); border: 1px solid var(--armcc-border); border-radius: 8px; overflow: hidden; }
+.armcc-environment-header { align-items: center; border-bottom: 1px solid var(--armcc-border); display: flex; justify-content: space-between; padding: 14px 18px; }
+.armcc-environment-status { align-items: center; display: flex; gap: 10px; min-width: 0; }
+.armcc-environment-status h2 { font-size: 15px; font-weight: 600; line-height: 21px; margin: 0; }
+.armcc-environment-status p { color: var(--armcc-text-muted); font-size: 12px; line-height: 16px; margin: 1px 0 0; }
+.armcc-environment-mode { border: 1px solid var(--armcc-border-strong); border-radius: 5px; color: var(--armcc-text-secondary); font: 600 11px/16px "Cascadia Code", "SFMono-Regular", Consolas, monospace; padding: 3px 7px; }
+.armcc-environment-identity { display: grid; grid-template-columns: 1fr 1fr; margin: 0; }
+.armcc-environment-identity > div { border-bottom: 1px solid var(--armcc-border); display: grid; gap: 3px; min-width: 0; padding: 11px 18px; }
+.armcc-environment-identity > div:nth-child(odd) { border-right: 1px solid var(--armcc-border); }
+.armcc-environment-identity dt { color: var(--armcc-text-muted); font-size: 12px; line-height: 16px; }
+.armcc-environment-identity dd { color: var(--armcc-text-secondary); font-size: 13px; line-height: 18px; margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.armcc-environment-identity code { color: var(--armcc-text-secondary); display: block; font-size: 11px; line-height: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.armcc-environment-rows { padding: 4px 0; }
+.armcc-environment-rows > div { align-items: center; display: flex; gap: 24px; justify-content: space-between; min-height: 48px; padding: 7px 18px; }
+.armcc-environment-rows > div + div { border-top: 1px solid var(--armcc-border); }
+.armcc-environment-rows > div > span { display: grid; gap: 1px; min-width: 0; }
+.armcc-environment-rows strong { font-size: 13px; font-weight: 500; line-height: 18px; }
+.armcc-environment-rows small { color: var(--armcc-text-muted); font-size: 12px; line-height: 16px; }
+.armcc-environment-rows code { color: var(--armcc-text-secondary); flex: none; font-size: 11px; line-height: 16px; }
+.armcc-environment-footer { align-items: center; background: var(--armcc-inset); border-top: 1px solid var(--armcc-border); display: flex; gap: 12px; min-height: 44px; padding: 5px 10px 5px 18px; }
+.armcc .armcc-text-action { background: transparent; border-color: transparent; color: var(--armcc-accent); min-height: 32px; padding: 6px 0; }
+.armcc .armcc-text-action:hover:not(:disabled) { background: transparent; border-color: transparent; color: #9bc6ec; }
+.armcc-environment-footer > .armcc-text-action { flex: none; }
+.armcc-environment-error,
+.armcc-environment-message { color: var(--armcc-text-muted); font-size: 12px; line-height: 16px; margin-left: auto; min-width: 0; text-align: right; }
+.armcc-environment-error strong { color: var(--armcc-warning); font-weight: 500; }
+.armcc-environment-error .armcc-text-action { font-size: 12px; margin-left: 7px; min-height: 0; padding: 0; }
+
+/* Shared page headings and feedback */
+.armcc-section { margin-top: 30px; }
+.armcc-section-heading { align-items: flex-end; display: flex; gap: 20px; justify-content: space-between; margin-bottom: 14px; }
+.armcc-section-heading p { color: var(--armcc-text-muted); font-size: 12px; font-weight: 500; line-height: 16px; margin: 0 0 3px; }
+.armcc-section-heading h2 { font-size: 20px; font-weight: 600; letter-spacing: -.015em; line-height: 26px; margin: 0; }
+.armcc-section-heading > div:last-child { flex: none; }
+.armcc-page-intro { color: var(--armcc-text-secondary); font-size: 14px; line-height: 21px; margin: -2px 0 22px; max-width: 760px; }
+.armcc-page-intro strong { color: var(--armcc-text); font-weight: 500; }
+.armcc-action-message { border-left: 2px solid var(--armcc-accent); color: var(--armcc-text-secondary); font-size: 12px; line-height: 16px; margin: 12px 0 0; padding: 5px 8px; }
+.armcc-action-runtime { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.armcc-action-runtime > span { border: 1px solid var(--armcc-border-strong); border-radius: 4px; color: var(--armcc-text-secondary); font: 600 11px/16px "Cascadia Code", "SFMono-Regular", Consolas, monospace; padding: 1px 5px; }
+.armcc-action-runtime > small { color: var(--armcc-text-muted); font: 11px/16px "Cascadia Code", "SFMono-Regular", Consolas, monospace; }
+.armcc-action-runtime > code { background: rgba(207, 127, 134, .08); border-left: 2px solid var(--armcc-danger); color: #dea5aa; flex-basis: 100%; font-size: 11px; line-height: 16px; max-height: 96px; overflow: auto; padding: 6px 8px; white-space: pre-wrap; }
+.armcc-action-runtime.is-running > span,
+.armcc-action-runtime.is-starting > span { border-color: rgba(192, 160, 107, .45); color: var(--armcc-warning); }
+.armcc-action-runtime.is-failed > span { border-color: rgba(207, 127, 134, .45); color: var(--armcc-danger); }
+.armcc-action-runtime.is-succeeded > span { border-color: rgba(121, 169, 139, .45); color: var(--armcc-success); }
+.armcc-visually-hidden { clip: rect(0 0 0 0); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; white-space: nowrap; width: 1px; }
+
+/* Control */
+.armcc-control { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100%; min-height: 0; }
+.armcc-control-ribbon { align-items: center; background: var(--armcc-inset); border-bottom: 1px solid var(--armcc-border); display: flex; gap: 10px; justify-content: center; min-height: 30px; padding: 4px 12px; }
+.armcc-control-ribbon strong { color: var(--armcc-text-secondary); font: 600 11px/16px "Cascadia Code", "SFMono-Regular", Consolas, monospace; }
+.armcc-control-ribbon span { color: var(--armcc-text-muted); font-size: 12px; line-height: 16px; }
+.armcc-control-ribbon code { color: var(--armcc-text-secondary); font-size: 11px; }
+.armcc-control > .simplearm { min-height: 0; }
+.armcc-control-unconfigured { align-content: center; color: var(--armcc-text-secondary); display: grid; gap: 6px; min-height: 320px; padding: 40px; text-align: center; }
+.armcc-control-unconfigured strong { color: var(--armcc-text); font-size: 15px; font-weight: 600; }
+.armcc-control-unconfigured span { font-size: 13px; line-height: 18px; }
+
+/* Guide */
+.armcc-guide-start { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.armcc-guide-start button { background: var(--armcc-panel); border-color: var(--armcc-border); display: grid; gap: 3px; min-height: 102px; padding: 14px; text-align: left; }
+.armcc-guide-start button:hover:not(:disabled) { border-color: var(--armcc-border-strong); }
+.armcc-guide-start span { color: var(--armcc-text-muted); font: 500 11px/16px "Cascadia Code", "SFMono-Regular", Consolas, monospace; }
+.armcc-guide-start strong { font-size: 13px; font-weight: 600; line-height: 18px; margin-top: 5px; }
+.armcc-guide-start small { color: var(--armcc-text-secondary); font-size: 12px; line-height: 17px; }
+.armcc-guide-columns { display: grid; gap: 28px; grid-template-columns: 1fr 1fr; margin-top: 30px; }
+.armcc-guide-columns > section { min-width: 0; }
+.armcc-guide-columns h3 { border-bottom: 1px solid var(--armcc-border); font-size: 15px; font-weight: 600; line-height: 21px; margin: 0; padding-bottom: 9px; }
+.armcc-route-list { margin: 0; }
+.armcc-route-list > div { border-bottom: 1px solid var(--armcc-border); display: grid; gap: 12px; grid-template-columns: 78px 1fr; padding: 11px 0; }
+.armcc-route-list dt { color: var(--armcc-accent); font: 600 11px/16px "Cascadia Code", "SFMono-Regular", Consolas, monospace; }
+.armcc-route-list dd { color: var(--armcc-text-secondary); font-size: 12px; line-height: 17px; margin: 0; }
+.armcc-proof-list { list-style: none; margin: 0; padding: 0; }
+.armcc-proof-list li { border-bottom: 1px solid var(--armcc-border); display: grid; gap: 2px; padding: 10px 0; }
+.armcc-proof-list strong { font-size: 13px; font-weight: 500; }
+.armcc-proof-list span { color: var(--armcc-text-secondary); font-size: 12px; line-height: 17px; }
+.armcc-guide-inventory { display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.armcc-guide-inventory article { background: var(--armcc-panel); border: 1px solid var(--armcc-border); border-radius: 8px; min-height: 150px; padding: 15px; }
+.armcc-guide-inventory article > span { color: var(--armcc-text-muted); font: 500 11px/16px "Cascadia Code", "SFMono-Regular", Consolas, monospace; }
+.armcc-guide-inventory h3 { font-size: 13px; font-weight: 600; line-height: 18px; margin: 14px 0 5px; }
+.armcc-guide-inventory p { color: var(--armcc-text-secondary); font-size: 12px; line-height: 17px; margin-bottom: 10px; }
+.armcc-guide-inventory code { color: var(--armcc-text-muted); display: block; font-size: 11px; line-height: 16px; overflow-wrap: anywhere; }
+.armcc-source-map { border-top: 1px solid var(--armcc-border); margin: 14px 0 0; }
+.armcc-source-map > div { border-bottom: 1px solid var(--armcc-border); display: grid; gap: 12px; grid-template-columns: minmax(150px, .5fr) 1fr; padding: 9px 0; }
+.armcc-source-map dt { color: var(--armcc-text-secondary); font-size: 12px; line-height: 16px; }
+.armcc-source-map dd { margin: 0; }
+.armcc-source-map code { color: var(--armcc-text-muted); font-size: 11px; line-height: 16px; overflow-wrap: anywhere; }
+.armcc-guide-actions { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.armcc-guide-actions button { align-items: start; background: var(--armcc-panel); border-color: var(--armcc-border); display: grid; gap: 3px; padding: 12px 14px; text-align: left; }
+.armcc-guide-actions button:hover:not(:disabled) { border-color: var(--armcc-border-strong); }
+.armcc-guide-actions strong { font-size: 13px; font-weight: 500; }
+.armcc-guide-actions span { color: var(--armcc-text-secondary); font-size: 12px; line-height: 17px; }
+.armcc-guide-actions .armcc-action-runtime { margin-top: 4px; }
+
+@keyframes armcc-pulse { 50% { opacity: .35; } }
+
+@media (max-width: 1040px) {
+  .armcc-header { grid-template-columns: auto auto minmax(8px, 1fr) auto auto; }
+  .armcc-backend-status { display: none; }
+  .armcc-guide-inventory { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 800px) {
+  .armcc { grid-template-rows: auto auto minmax(0, 1fr); }
+  .armcc-header {
+    align-items: stretch;
+    gap: 0 6px;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-rows: 52px 42px;
+    height: 94px;
+    padding: 0 10px;
+  }
+  .armcc-title-lockup { grid-column: 1; grid-row: 1; }
+  .armcc-toolbar-spacer { display: none; }
+  .armcc-isaac-launch { grid-column: 2; grid-row: 1; }
+  .armcc-backend { grid-column: 3; grid-row: 1; }
+  .armcc-tabs { grid-column: 1 / -1; grid-row: 2; overflow-x: auto; }
+  .armcc-tabs button { flex: 1 0 auto; justify-content: center; padding-inline: 14px; }
+  .armcc-notices {
+    grid-row: 2;
+    max-width: none;
+    padding: 8px 12px 0;
+    position: static;
+    width: auto;
+  }
+  .armcc-notices > * { max-width: none; width: 100%; }
+  .armcc-main { grid-row: 3; }
+  .armcc-page { padding: 24px 18px 38px; }
+  .armcc-guide-start,
+  .armcc-guide-inventory { grid-template-columns: 1fr; }
+  .armcc-guide-columns { grid-template-columns: 1fr; }
+  .armcc-control-ribbon { justify-content: flex-start; }
+  .armcc-control-ribbon span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+@media (max-width: 600px) {
+  .armcc-page-header { align-items: stretch; flex-direction: column; gap: 14px; }
+  .armcc-page-actions { justify-content: flex-start; width: auto; }
+  .armcc-page-actions button { flex: none; min-height: 44px; }
+  .armcc-page-actions button:first-child { min-width: 124px; }
+  .armcc-page-actions .armcc-button-secondary { min-width: 72px; }
+  .armcc-environment-footer { align-items: flex-start; flex-direction: column; gap: 3px; padding: 8px 14px; }
+  .armcc-environment-error,
+  .armcc-environment-message { margin-left: 0; text-align: left; }
+  .armcc-guide-actions { grid-template-columns: 1fr; }
+  .armcc-section-heading { align-items: flex-start; flex-direction: column; }
+}
+
+@media (max-width: 390px) {
+  .armcc-environment-identity { grid-template-columns: 1fr; }
+  .armcc-environment-identity > div:nth-child(odd) { border-right: 0; }
+}
+
+@media (max-width: 460px) {
+  .armcc-title-lockup strong { font-size: 13px; }
+  .armcc-isaac-label-long { display: none; }
+  .armcc-isaac-label-short { display: inline; }
+  .armcc-isaac-launch { padding-inline: 8px !important; }
+  .armcc-segmented button { min-width: 39px; padding-inline: 5px; }
+  .armcc-page { padding-inline: 14px; }
+  .armcc-environment-header,
+  .armcc-environment-identity > div,
+  .armcc-environment-rows > div { padding-inline: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .armcc-status-dot.is-starting,
+  .armcc-status-dot.is-loading { animation: none; }
+}
+
+@media (any-pointer: coarse) {
+  .armcc-isaac-launch,
+  .armcc-segmented button { min-height: 44px; }
+}

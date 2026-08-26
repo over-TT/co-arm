@@ -26,7 +26,7 @@
 - [AI context contract](AI_CONTEXT.md)
 - [Vision workflow](VISION.md)
 - [Troubleshooting](TROUBLESHOOTING.md)
-- [Software source release plan](SOURCE_RELEASE_PLAN.md)
+- [Public source boundary](SOURCE_RELEASE_PLAN.md)
 
 ## Project record
 
@@ -36,6 +36,6 @@
 - [Media guide](MEDIA_GUIDE.md)
 - [Provenance and privacy](PROVENANCE.md)
 
-The private chronological engineering handoff is deliberately not included. It
-contains installation details, credentials context, device identifiers, and
-personal workspace history. `HISTORY.md` is the public-safe technical record.
+For the project record and the exact boundary between publishable evidence and
+local runtime data, use [History](HISTORY.md) and
+[Provenance and privacy](PROVENANCE.md).
