@@ -35,9 +35,11 @@ loopback port; it rejects URL suffixes and bypasses redirects and proxies.
   loopback-only service. It stops and restarts the service; a live hold can
   expire and a gravity-loaded arm can sag, so support the mechanism first.
 - `scripts/set-arm-gateway-mode.ps1` reversibly activates or deactivates only
-  the reviewed physical-UART drop-in on an existing prepared Pi. It requires
-  current supported-arm confirmation, preserves the fail-closed latch, and
-  proves the requested mode without clearing STOP, taking torque, or moving.
+  the reviewed physical-UART drop-in on an existing prepared Pi. It preserves
+  the fail-closed latch and accepts activation only after authenticated live
+  proof of the exact controller, firmware, required capabilities, and four
+  fresh stationary torque-off joints. It never clears STOP, takes torque, or
+  moves.
 - `scripts/arm_status.py` separates gateway, controller, bus, STOP, and joint
   state. Use the default read-only form before considering `--scan`.
 - `scripts/restore-arm-pi.ps1`, `scripts/backup-arm-pi.ps1`, and
@@ -47,3 +49,19 @@ loopback port; it rejects URL suffixes and bypasses redirects and proxies.
 
 For the ordered agent-assisted setup flow, start at
 [`../../docs/SETUP_WITH_CODEX.md`](../../docs/SETUP_WITH_CODEX.md).
+
+## Pi source and snapshot contract
+
+Make reusable gateway changes in this checkout, validate them, and deploy those
+exact bytes. `backup-arm-pi.ps1` computes a canonical SHA-256 contract for the
+reviewed 13 gateway modules plus `requirements-pi.txt` and refuses the snapshot
+if the frozen deployed copies differ. A live-Pi edit is therefore drift to fix,
+not a new source of truth.
+
+Take a protected snapshot before each reachable persistent Pi mutation when a
+useful prior state exists, then always take and verify another after the change.
+The parameterized archive retains same-device calibration, recovery gates,
+service/network/boot evidence, optional Base and recovery markers, credentials,
+and media binding under ignored `software/runtime/robot-gateway/pi-backups/`.
+It is private recovery state for that Pi, not a template for another person's
+credentials, Base frame, network, or host identity.

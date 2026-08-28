@@ -70,7 +70,6 @@ def test_recovery_script_is_sd_bound_pinned_and_phase_separated() -> None:
         "arm-gateway-physical-uart.conf",
         "do_serial_cons 1",
         "do_serial_hw 0",
-        "-ConfirmedArmSupported",
         "20-arm-controller-uart.conf",
         "copiedIntoManifest = $false",
         "Assert-RecoveredCalibrationProvenance",
@@ -104,6 +103,9 @@ def test_recovery_script_is_sd_bound_pinned_and_phase_separated() -> None:
         'echo "$actual"',
         'echo "$expected"',
         'cat "$installRoot/.robot-gateway.token"',
+        "ConfirmedArmSupported",
+        "supported-arm switch",
+        "supported-arm reboot",
     ):
         assert forbidden not in source
 

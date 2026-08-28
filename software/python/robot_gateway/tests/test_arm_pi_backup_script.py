@@ -162,12 +162,19 @@ def test_snapshot_curates_recovery_state_and_hashes_without_dumping_secrets() ->
         "var/lib/arm-gateway/recovery-manifest.json",
         "var/lib/arm-gateway/physical-arm-profile.json",
         "var/lib/arm-gateway/arm-clear-required.json",
+        "var/lib/arm-gateway/base-reference-required.json",
+        "var/lib/arm-gateway/headless-network-config-removed.json",
+        "var/lib/arm-gateway/recovery-source",
+        "var/lib/arm-gateway/recovery-boot-config",
         "etc/systemd/system/arm-gateway.service",
         "etc/systemd/system/arm-gateway.service.d",
         "etc/systemd/system/wayvnc.service.d",
         "etc/NetworkManager/system-connections",
         "etc/netplan",
         "etc/ssh",
+        "etc/fstab",
+        "etc/fake-hwclock.data",
+        "etc/arm-gateway/recovery-usb-media-binding.v1",
         "$home_relative/.ssh/authorized_keys",
         "$home_relative/.config/wayvnc",
         "boot/firmware/config.txt",
@@ -190,7 +197,14 @@ def test_snapshot_curates_recovery_state_and_hashes_without_dumping_secrets() ->
         "checksumsCoverSnapshotBytes",
         "physicalArmProfilePresent",
         "stopLatchPresent",
+        "baseReferenceGatePresent",
         "physicalUartDropInPresent",
+        "headlessCleanupMarkerPresent",
+        "recoverySourcePresent",
+        "recoveryBootConfigPresent",
+        "usbMediaBindingPresent",
+        "fstabPresent",
+        "fakeHwclockPresent",
         "20-arm-controller-uart.conf",
         "requiredDirectLanNetplanPresent",
         "require_regular_nonsymlink",
@@ -206,6 +220,34 @@ def test_snapshot_curates_recovery_state_and_hashes_without_dumping_secrets() ->
     assert 'add_tree "$install_relative/backups"' not in source
     assert "codex-arm-lan.nmconnection" not in source
     assert "20-physical-uart.conf" not in source
+
+
+def test_backup_binds_frozen_pi_source_to_the_canonical_laptop_hashes() -> None:
+    source = _source()
+    for required in (
+        "$expectedCanonicalSourceRows",
+        "Get-FileHash -LiteralPath $modulePath -Algorithm SHA256",
+        "Get-FileHash -LiteralPath $requirementsPath -Algorithm SHA256",
+        "$expectedCanonicalSourceContractBase64",
+        "expected_canonical_source_contract_base64=${10}",
+        'base64 --decode > "$expected_canonical_source"',
+        'sha256sum -- "$snapshot_root/$install_relative/robot_gateway/$module"',
+        'sha256sum -- "$snapshot_root/$install_relative/requirements-pi.txt"',
+        'cmp -s "$expected_canonical_source" "$snapshot_canonical_source" || source_drift',
+        "canonical-source.sha256",
+        "canonicalSourceFileCount",
+        "canonicalSourceHashesVerified",
+        "canonicalSourceContractSha256",
+        "exit 44",
+    ):
+        assert required in source
+
+    assert source.index('sudo tar --extract --file "$seed_tar"') < source.index(
+        'cmp -s "$expected_canonical_source" "$snapshot_canonical_source"'
+    )
+    assert source.index(
+        'cmp -s "$expected_canonical_source" "$snapshot_canonical_source"'
+    ) < source.index('metadata_dir="$snapshot_root/metadata"')
 
 
 def test_backup_requires_exactly_the_reviewed_13_gateway_modules() -> None:
@@ -294,6 +336,7 @@ def test_remote_snapshot_hashes_frozen_bytes_and_self_verifies_final_archive() -
         'sudo tar --extract --gzip --file "$archive_gz" --directory "$verify_root"',
         "sha256sum -c metadata/SHA256SUMS",
         "sha256sum -c metadata/METADATA_SHA256SUMS",
+        "sha256sum -c metadata/canonical-source.sha256",
         'sudo cat "$archive_gz"',
     ):
         assert required in source

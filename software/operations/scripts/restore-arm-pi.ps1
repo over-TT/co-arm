@@ -15,13 +15,12 @@ restores calibration, and installs the WayVNC ordering drop-in. It never enables
 the physical UART, clears STOP, flashes firmware, takes torque, or moves a joint.
 
 ConfigureUart backs up the SD boot configuration and enables the Pi UART without
-rebooting. Activate is deliberately separate, requires an explicit current
-supported-arm switch, seeds or retains a fail-closed inspection latch, installs
-the reviewed UART drop-in, restarts once, and authenticates a strict torque-off
-controller-state proof. Deactivate verifies and removes only that reviewed
-drop-in, retains the latch, and deliberately restarts in dormant mode. Verify
-does not mutate restored system state. No phase reboots the Pi or performs an
-arm action.
+rebooting. Activate is deliberately separate, seeds or retains a fail-closed
+inspection latch, installs the reviewed UART drop-in, restarts once, and
+authenticates a strict torque-off controller-state proof. Deactivate verifies
+and removes only that reviewed drop-in, retains the latch, and deliberately
+restarts in dormant mode. Verify does not mutate restored system state. No
+phase reboots the Pi or performs an arm action.
 #>
 
 [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
@@ -55,8 +54,7 @@ param(
     [Parameter(Mandatory)] [ValidatePattern('^/dev/[A-Za-z0-9._/+:-]+$')] [string] $ExpectedBootDevice,
     [Parameter(Mandatory)] [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$')] [string] $ExpectedControllerId,
     [Parameter(Mandatory)] [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]{2,63}$')] [string] $ExpectedFirmwareVersion,
-    [Parameter(Mandatory)] [ValidatePattern('^(?:[0-9]{1,3}\.){3}[0-9]{1,3}/(?:[0-9]|[12][0-9]|3[0-2])$')] [string] $DirectLanAddressCidr,
-    [switch] $ConfirmedArmSupported
+    [Parameter(Mandatory)] [ValidatePattern('^(?:[0-9]{1,3}\.){3}[0-9]{1,3}/(?:[0-9]|[12][0-9]|3[0-2])$')] [string] $DirectLanAddressCidr
 )
 
 Set-StrictMode -Version Latest
@@ -958,16 +956,13 @@ grep -Eq '^enable_uart=1([[:space:]]|$)' /boot/firmware/config.txt || {
   echo 'enable_uart=1 is missing after configuration.' >&2
   exit 31
 }
-echo 'UART boot configuration is ready. A deliberate supported-arm reboot is required; none was performed.'
+echo 'UART boot configuration is ready. A deliberate reboot is required; none was performed.'
 '@
     Invoke-RemoteScript -Context $Context -ScriptText $script -Operation 'UART boot configuration'
 }
 
 function Invoke-Activate {
     param([Parameter(Mandatory)] $Context)
-    if (-not $ConfirmedArmSupported) {
-        throw 'Activate requires -ConfirmedArmSupported after the operator has mechanically supported the arm.'
-    }
     Assert-ReplacementSdBoot -Context $Context
     $stage = '/tmp/arm-pi-uart-' + [Guid]::NewGuid().ToString('N')
     $digestContractPath = New-RemoteDigestContract -Scope Activate
@@ -1183,9 +1178,6 @@ sudo find "$stage" -depth -type d -empty -delete 2>/dev/null || true
 
 function Invoke-Deactivate {
     param([Parameter(Mandatory)] $Context)
-    if (-not $ConfirmedArmSupported) {
-        throw 'Deactivate requires -ConfirmedArmSupported from the current run because restarting releases any live hold.'
-    }
     Assert-ReplacementSdBoot -Context $Context
     $stage = '/tmp/arm-pi-uart-' + [Guid]::NewGuid().ToString('N')
     $digestContractPath = New-RemoteDigestContract -Scope Deactivate

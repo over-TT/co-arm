@@ -6,13 +6,13 @@ Activates or deactivates the reviewed physical UART mode on a prepared arm Pi.
 
 .DESCRIPTION
 This high-impact, approval-gated operation is for an existing prepared gateway
-installation. Activate requires current confirmation that the arm is
-mechanically supported, verifies the pinned SSH transport, installed base unit,
+installation. Activate verifies the pinned SSH transport, installed base unit,
 UART prerequisites, reviewed drop-in digest, and durable fail-closed latch,
 then performs one deliberate service restart. It accepts physical mode only
-after an authenticated Pi-local state proves the expected controller and
-firmware plus four fresh, stationary, torque-off joints with STOP and operator
-inspection latched, floor guard enabled, and collision explicitly clear.
+after an authenticated Pi-local state proves the expected controller, firmware,
+required controller capabilities, and four fresh, stationary, torque-off joints
+with STOP and operator inspection latched, floor guard enabled, and collision
+explicitly clear.
 
 Deactivate verifies the same installed drop-in and latch, removes only that
 drop-in, deliberately restarts the dormant service, and proves that no physical
@@ -57,9 +57,7 @@ param(
 
     [Parameter(Mandatory)]
     [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]{2,63}$')]
-    [string] $ExpectedFirmwareVersion,
-
-    [switch] $ConfirmedArmSupported
+    [string] $ExpectedFirmwareVersion
 )
 
 Set-StrictMode -Version Latest
@@ -68,10 +66,6 @@ $ErrorActionPreference = 'Stop'
 if ($HostName -notmatch '^[A-Za-z0-9][A-Za-z0-9.:-]*$' -or $HostName.StartsWith('-')) {
     throw 'HostName must be a DNS name, IPv4 address, or unbracketed IPv6 literal.'
 }
-if (-not $ConfirmedArmSupported) {
-    throw "$Mode requires -ConfirmedArmSupported from the current run because the service restart can release a live hold."
-}
-
 function Resolve-RequiredLeaf {
     param(
         [Parameter(Mandatory)] [string] $Path,
@@ -467,6 +461,10 @@ def failures(state):
         problems.append("controller firmware does not match")
     if not isinstance(controller.get("bootId"), str) or not controller.get("bootId"):
         problems.append("controller boot identity is absent")
+    if controller.get("multiTurnAbsoluteV1") is not True:
+        problems.append("native absolute multi-turn capability is absent")
+    if controller.get("liveFollowV1") is not True:
+        problems.append("live-follow capability is absent")
     if state.get("connection") != "online":
         problems.append("controller connection is not online")
     if state.get("bus") != "online":
@@ -529,9 +527,9 @@ while time.monotonic() < deadline:
         last = failures(payload)
         if not last:
             print(
-                "Authenticated controller safety proof passed: expected controller and firmware, "
-                "four fresh torque-off stationary joints, STOP and inspection latched, floor guard "
-                "enabled, and collision explicitly clear."
+                "Authenticated controller safety proof passed: expected controller, firmware, "
+                "native multi-turn and live-follow capabilities, four fresh torque-off stationary "
+                "joints, STOP and inspection latched, floor guard enabled, and collision explicitly clear."
             )
             raise SystemExit(0)
     except (OSError, UnicodeError, ValueError, urllib.error.URLError):

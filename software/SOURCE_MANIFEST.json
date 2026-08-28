@@ -259,8 +259,8 @@
     },
     {
       "path": "software/operations/README.md",
-      "bytes": 2702,
-      "sha256": "aee2200e678e4f8ae7fc1fe4316e9c9a406c3bafc76c6329c842c1b572a3f22c"
+      "bytes": 3695,
+      "sha256": "e98386c3e9df5d247fd376589287d07ff2888f7076f232744f9d33e1ff7d0c1e"
     },
     {
       "path": "software/operations/deploy/arm-gateway-physical-uart.conf",
@@ -289,8 +289,8 @@
     },
     {
       "path": "software/operations/scripts/backup-arm-pi.ps1",
-      "bytes": 27434,
-      "sha256": "57a5c964428d77d8b77b80d9a08ac6d5ebc286febb3860a018541169dad66d89"
+      "bytes": 32257,
+      "sha256": "60d0844519951ba84ce09fbd3f968ae8f4e30ecab51b683d8458756cc15b6b58"
     },
     {
       "path": "software/operations/scripts/compile-firmware.ps1",
@@ -309,8 +309,8 @@
     },
     {
       "path": "software/operations/scripts/restore-arm-pi.ps1",
-      "bytes": 61782,
-      "sha256": "15e95a0fe4c6eda78a61d31021e128c4f694ff9fc3bd34d17c6cff62ef35b23f"
+      "bytes": 61355,
+      "sha256": "bb4a59c6835b214c489de04a0be64b0fd20fcd9f74388d3f7c0b9906e4bc7916"
     },
     {
       "path": "software/operations/scripts/run_arm_sim.py",
@@ -319,8 +319,8 @@
     },
     {
       "path": "software/operations/scripts/set-arm-gateway-mode.ps1",
-      "bytes": 26364,
-      "sha256": "2a5736c84383f29fda18825c92cb18279580b2114225e65ba21fa48b6bab76f2"
+      "bytes": 26414,
+      "sha256": "585e163d9bab585e34413c7d4b3a20188b1932e7096de58d26a1b8485db3ad6d"
     },
     {
       "path": "software/plugin/.agents/plugins/marketplace.json",
@@ -624,18 +624,18 @@
     },
     {
       "path": "software/python/robot_gateway/tests/test_arm_gateway_mode_script.py",
-      "bytes": 8229,
-      "sha256": "5ec31489f05e44ef3acde3a303bae249a48db5268d8cc1fc05df2497e1ff9ea5"
+      "bytes": 6950,
+      "sha256": "24cf397163136a27e473b479756104343d869503ecf7e366fa2a0f993d01a404"
     },
     {
       "path": "software/python/robot_gateway/tests/test_arm_pi_backup_script.py",
-      "bytes": 15347,
-      "sha256": "5f3c1b6e25ccbc90f8316b61f658f7183a1ca62550331a6a4ce778f2ea1cc61f"
+      "bytes": 17242,
+      "sha256": "ec08570f3ffac8782051efbceae79b6fee1550ae75cd08add65f3f3ea34d9c84"
     },
     {
       "path": "software/python/robot_gateway/tests/test_arm_pi_restore_script.py",
-      "bytes": 23809,
-      "sha256": "01dadbeca20f6d9bbfe5eeeccf3b635d319ae7e8c59994cc970679599f8c8c92"
+      "bytes": 23872,
+      "sha256": "adfdb1597a4a22084dd176901c2cffd33c3e727f1ffbd102470ba5cd03c64d81"
     },
     {
       "path": "software/python/robot_gateway/tests/test_arm_pi_sd_image_script.py",

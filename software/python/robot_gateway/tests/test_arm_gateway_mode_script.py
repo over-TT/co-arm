@@ -28,7 +28,7 @@ def _bash_path() -> str | None:
     return str(git_bash) if git_bash.is_file() else None
 
 
-def test_mode_operation_is_current_support_and_pinned_transport_gated() -> None:
+def test_mode_operation_is_approval_and_pinned_transport_gated_without_support_prompt() -> None:
     source = _source()
     for required in (
         "SupportsShouldProcess = $true",
@@ -36,8 +36,6 @@ def test_mode_operation_is_current_support_and_pinned_transport_gated() -> None:
         "ValidateSet('Activate', 'Deactivate')",
         "[ValidateRange(1, 65535)]",
         "[int] $Port = 22",
-        "[switch] $ConfirmedArmSupported",
-        "requires -ConfirmedArmSupported from the current run",
         "StrictHostKeyChecking=yes",
         "IdentitiesOnly=yes",
         "BatchMode=yes",
@@ -51,13 +49,12 @@ def test_mode_operation_is_current_support_and_pinned_transport_gated() -> None:
     ):
         assert required in source
 
-    assert source.index("if (-not $ConfirmedArmSupported)") < source.index(
-        "$PSCmdlet.ShouldProcess"
-    )
     assert source.index("$PSCmdlet.ShouldProcess") < source.index(
         "$preparePayload | & $sshPath"
     )
     assert "StrictHostKeyChecking=no" not in source
+    assert "ConfirmedArmSupported" not in source
+    assert "support confirmation" not in source.lower()
 
 
 def test_activate_verifies_reviewed_install_and_fail_closed_controller_state() -> None:
@@ -86,6 +83,8 @@ def test_activate_verifies_reviewed_install_and_fail_closed_controller_state() -
         "with opener.open(request, timeout=2) as response",
         'controller.get("controllerId") != expected_controller_id',
         'controller.get("firmwareVersion") != expected_firmware_version',
+        'controller.get("multiTurnAbsoluteV1") is not True',
+        'controller.get("liveFollowV1") is not True',
         'state.get("connection") != "online"',
         'state.get("bus") != "online"',
         'state.get("stopped") is not True',
@@ -152,51 +151,6 @@ def test_deactivate_is_exact_reversible_and_idempotently_dormant() -> None:
         "/api/camera",
     ):
         assert forbidden not in source
-
-
-def test_missing_current_support_confirmation_fails_before_file_or_network_io() -> None:
-    powershell = _powershell_path()
-    if powershell is None:
-        pytest.skip("Windows PowerShell is not available")
-
-    completed = subprocess.run(
-        [
-            powershell,
-            "-NoLogo",
-            "-NoProfile",
-            "-NonInteractive",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-File",
-            str(SCRIPT),
-            "-Mode",
-            "Activate",
-            "-HostName",
-            "arm-test.invalid",
-            "-UserName",
-            "armtest",
-            "-ServiceGroup",
-            "armtest",
-            "-IdentityFile",
-            "missing-identity",
-            "-KnownHostsFile",
-            "missing-known-hosts",
-            "-ExpectedControllerId",
-            "armhat-test-controller",
-            "-ExpectedFirmwareVersion",
-            "arm-hat-test-version",
-        ],
-        capture_output=True,
-        text=True,
-        timeout=15,
-        check=False,
-    )
-
-    output = completed.stdout + completed.stderr
-    assert completed.returncode != 0
-    assert "requires -ConfirmedArmSupported from the current run" in output
-    assert "Cannot find path" not in output
-    assert "ssh" not in output.lower()
 
 
 def test_mode_script_and_embedded_remote_shell_parse() -> None:

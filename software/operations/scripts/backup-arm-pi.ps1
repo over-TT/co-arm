@@ -191,6 +191,28 @@ if ($currentGatewayModuleNames.Count -ne 13 -or
     throw 'The laptop gateway source is incomplete or unexpected; exactly the reviewed 13 Python modules are required.'
 }
 $expectedGatewayModulesCsv = ($currentGatewayModuleNames -join ',')
+$requirementsPath = Join-Path $softwareRoot 'operations\requirements-pi.txt'
+$installRelative = $installRoot.TrimStart('/')
+$expectedCanonicalSourceRows = @(
+    foreach ($moduleName in $currentGatewayModuleNames) {
+        $modulePath = Join-Path $localGatewayDirectory $moduleName
+        $moduleSha256 = (
+            Get-FileHash -LiteralPath $modulePath -Algorithm SHA256 -ErrorAction Stop
+        ).Hash.ToLowerInvariant()
+        "$moduleSha256  $installRelative/robot_gateway/$moduleName"
+    }
+    $requirementsSha256 = (
+        Get-FileHash -LiteralPath $requirementsPath -Algorithm SHA256 -ErrorAction Stop
+    ).Hash.ToLowerInvariant()
+    "$requirementsSha256  $installRelative/requirements-pi.txt"
+)
+if ($expectedCanonicalSourceRows.Count -ne 14) {
+    throw 'The canonical Pi source hash contract must contain exactly 13 modules and requirements-pi.txt.'
+}
+$expectedCanonicalSourceContract = ([string[]] $expectedCanonicalSourceRows -join "`n") + "`n"
+$expectedCanonicalSourceContractBase64 = [Convert]::ToBase64String(
+    [System.Text.Encoding]::UTF8.GetBytes($expectedCanonicalSourceContract)
+)
 
 $sshPath = (Get-Command ssh -CommandType Application -ErrorAction Stop).Source
 $tarPath = (Get-Command tar -CommandType Application -ErrorAction Stop).Source
@@ -210,6 +232,7 @@ service_group=$6
 install_root=$7
 direct_lan_address_cidr=$8
 direct_lan_profile=$9
+expected_canonical_source_contract_base64=${10}
 install_relative=${install_root#/}
 home_root=${install_root%/arm-gateway}
 home_relative=${home_root#/}
@@ -269,6 +292,8 @@ verify_modules="$remote_tmp/verify-modules.txt"
 verify_modules_raw="$remote_tmp/verify-modules.raw.txt"
 snapshot_checksum_list="$remote_tmp/snapshot-checksum-files.nul"
 metadata_checksum_list="$remote_tmp/metadata-checksum-files.nul"
+expected_canonical_source="$remote_tmp/expected-canonical-source.sha256"
+snapshot_canonical_source="$remote_tmp/snapshot-canonical-source.sha256"
 snapshot_root="$remote_tmp/snapshot"
 verify_root="$remote_tmp/verify"
 seed_tar="$remote_tmp/snapshot-seed.tar"
@@ -280,6 +305,11 @@ sudo install -m 0600 -o "$expected_user" -g "$service_group" /dev/null "$file_li
 incomplete() {
   printf '%s\n' 'The Pi gateway installation is incomplete; refusing a misleading recovery backup.' >&2
   exit 43
+}
+
+source_drift() {
+  printf '%s\n' 'The deployed Pi gateway source differs from the canonical laptop source; refusing the backup.' >&2
+  exit 44
 }
 
 add_file() {
@@ -342,6 +372,10 @@ sudo grep -Fq -- "$direct_lan_address_cidr" "$direct_lan_profile" || incomplete
 # Persistent calibration, accepted physical profile, and fail-closed STOP state.
 add_file var/lib/arm-gateway/physical-arm-profile.json
 add_file var/lib/arm-gateway/arm-clear-required.json
+add_file var/lib/arm-gateway/base-reference-required.json
+add_file var/lib/arm-gateway/headless-network-config-removed.json
+add_tree var/lib/arm-gateway/recovery-source
+add_tree var/lib/arm-gateway/recovery-boot-config
 
 # Units and reviewed runtime activation/boot-order drop-ins.
 add_tree etc/systemd/system/arm-gateway.service.d
@@ -352,6 +386,9 @@ add_tree etc/systemd/system/ssh.service.d
 add_tree etc/NetworkManager/system-connections
 add_tree etc/netplan
 add_tree etc/ssh
+add_file etc/fstab
+add_file etc/fake-hwclock.data
+add_file etc/arm-gateway/recovery-usb-media-binding.v1
 add_file "$home_relative/.ssh/authorized_keys"
 add_tree "$home_relative/.config/wayvnc"
 
@@ -393,6 +430,23 @@ sudo find "$snapshot_root/$install_relative/robot_gateway" -maxdepth 1 \
 LC_ALL=C sort "$snapshot_modules_raw" > "$snapshot_modules" || incomplete
 cmp -s "$expected_modules" "$snapshot_modules" || incomplete
 snapshot_source_count=13
+case "$expected_canonical_source_contract_base64" in
+  ''|*[!A-Za-z0-9+/=]*) source_drift ;;
+esac
+printf '%s' "$expected_canonical_source_contract_base64" \
+  | base64 --decode > "$expected_canonical_source" || source_drift
+[ "$(wc -l < "$expected_canonical_source" | tr -d ' ')" -eq 14 ] || source_drift
+while IFS= read -r module; do
+  digest=$(sudo sha256sum -- "$snapshot_root/$install_relative/robot_gateway/$module" \
+    | awk '{print $1}') || source_drift
+  printf '%s  %s/robot_gateway/%s\n' "$digest" "$install_relative" "$module"
+done < "$expected_modules" > "$snapshot_canonical_source"
+requirements_digest=$(sudo sha256sum -- "$snapshot_root/$install_relative/requirements-pi.txt" \
+  | awk '{print $1}') || source_drift
+printf '%s  %s/requirements-pi.txt\n' "$requirements_digest" "$install_relative" \
+  >> "$snapshot_canonical_source"
+cmp -s "$expected_canonical_source" "$snapshot_canonical_source" || source_drift
+canonical_source_contract_sha256=$(sha256sum "$expected_canonical_source" | awk '{print $1}')
 for required in \
   "$install_relative/.robot-gateway.token" \
   var/lib/arm-gateway/arm-joints.json \
@@ -412,6 +466,8 @@ sudo grep -Fq -- "$direct_lan_address_cidr" "$snapshot_lan" || incomplete
 metadata_dir="$snapshot_root/metadata"
 sudo install -d -m 0700 -o root -g root "$metadata_dir"
 sudo install -m 0600 -o root -g root "$expected_modules" "$metadata_dir/gateway-modules.txt"
+sudo install -m 0600 -o root -g root "$expected_canonical_source" \
+  "$metadata_dir/canonical-source.sha256"
 sudo find "$snapshot_root" -type f ! -path "$metadata_dir/*" -printf '%P\000' \
   > "$snapshot_checksum_list" || incomplete
 LC_ALL=C sort -zu "$snapshot_checksum_list" -o "$snapshot_checksum_list" || incomplete
@@ -427,13 +483,33 @@ file_count=$(tr -cd '\000' < "$snapshot_checksum_list" | wc -c | tr -d ' ')
 captured_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 physical_profile_present=no
 stop_latch_present=no
+base_reference_gate_present=no
 physical_uart_dropin_present=no
+headless_cleanup_marker_present=no
+recovery_source_present=no
+recovery_boot_config_present=no
+usb_media_binding_present=no
+fstab_present=no
+fake_hwclock_present=no
 sudo test -f "$snapshot_root/var/lib/arm-gateway/physical-arm-profile.json" && physical_profile_present=yes
 sudo test -f "$snapshot_root/var/lib/arm-gateway/arm-clear-required.json" && stop_latch_present=yes
+sudo test -f "$snapshot_root/var/lib/arm-gateway/base-reference-required.json" && base_reference_gate_present=yes
 sudo test -f "$snapshot_root/etc/systemd/system/arm-gateway.service.d/20-arm-controller-uart.conf" && physical_uart_dropin_present=yes
+sudo test -f "$snapshot_root/var/lib/arm-gateway/headless-network-config-removed.json" && headless_cleanup_marker_present=yes
+if sudo find "$snapshot_root/var/lib/arm-gateway/recovery-source" -type f -print -quit \
+   2>/dev/null | grep -q .; then
+  recovery_source_present=yes
+fi
+if sudo find "$snapshot_root/var/lib/arm-gateway/recovery-boot-config" -type f -print -quit \
+   2>/dev/null | grep -q .; then
+  recovery_boot_config_present=yes
+fi
+sudo test -f "$snapshot_root/etc/arm-gateway/recovery-usb-media-binding.v1" && usb_media_binding_present=yes
+sudo test -f "$snapshot_root/etc/fstab" && fstab_present=yes
+sudo test -f "$snapshot_root/etc/fake-hwclock.data" && fake_hwclock_present=yes
 
 {
-  printf 'schema\tarm-pi-recovery-backup.v2\n'
+  printf 'schema\tarm-pi-recovery-backup.v3\n'
   printf 'capturedAtUtc\t%s\n' "$captured_at"
   printf 'hostname\t%s\n' "$actual_hostname"
   printf 'user\t%s\n' "$actual_user"
@@ -447,9 +523,19 @@ sudo test -f "$snapshot_root/etc/systemd/system/arm-gateway.service.d/20-arm-con
   printf 'machineIdSha256\t%s\n' "$machine_id_sha256"
   printf 'sourceModuleCount\t%s\n' "$snapshot_source_count"
   printf 'archivedFileCount\t%s\n' "$file_count"
+  printf 'canonicalSourceFileCount\t14\n'
+  printf 'canonicalSourceHashesVerified\tyes\n'
+  printf 'canonicalSourceContractSha256\t%s\n' "$canonical_source_contract_sha256"
   printf 'physicalArmProfilePresent\t%s\n' "$physical_profile_present"
   printf 'stopLatchPresent\t%s\n' "$stop_latch_present"
+  printf 'baseReferenceGatePresent\t%s\n' "$base_reference_gate_present"
   printf 'physicalUartDropInPresent\t%s\n' "$physical_uart_dropin_present"
+  printf 'headlessCleanupMarkerPresent\t%s\n' "$headless_cleanup_marker_present"
+  printf 'recoverySourcePresent\t%s\n' "$recovery_source_present"
+  printf 'recoveryBootConfigPresent\t%s\n' "$recovery_boot_config_present"
+  printf 'usbMediaBindingPresent\t%s\n' "$usb_media_binding_present"
+  printf 'fstabPresent\t%s\n' "$fstab_present"
+  printf 'fakeHwclockPresent\t%s\n' "$fake_hwclock_present"
   printf 'requiredCalibrationProvenancePresent\tyes\n'
   printf 'requiredRecoveryManifestPresent\tyes\n'
   printf 'requiredDirectLanNetplanPresent\tyes\n'
@@ -491,7 +577,8 @@ sudo tar --list --gzip --file "$archive_gz" >/dev/null
 # metadata before any byte is streamed to the laptop.
 sudo tar --extract --gzip --file "$archive_gz" --directory "$verify_root"
 sudo sh -c 'cd "$1" && sha256sum -c metadata/SHA256SUMS >/dev/null && \
-  sha256sum -c metadata/METADATA_SHA256SUMS >/dev/null' sh "$verify_root" || incomplete
+  sha256sum -c metadata/METADATA_SHA256SUMS >/dev/null && \
+  sha256sum -c metadata/canonical-source.sha256 >/dev/null' sh "$verify_root" || incomplete
 sudo find "$verify_root/$install_relative/robot_gateway" -maxdepth 1 \
   -type f -name '*.py' -printf '%f\n' > "$verify_modules_raw" || incomplete
 LC_ALL=C sort "$verify_modules_raw" > "$verify_modules" || incomplete
@@ -505,7 +592,7 @@ $remoteTarget = "${UserName}@${remoteHost}"
 $remoteCommand = (
     "sh -s -- '$ExpectedHostName' '$ExpectedRootDevice' '$ExpectedBootDevice' " +
     "'$expectedGatewayModulesCsv' '$UserName' '$ServiceGroup' '$installRoot' " +
-    "'$DirectLanAddressCidr' '$DirectLanProfilePath'"
+    "'$DirectLanAddressCidr' '$DirectLanProfilePath' '$expectedCanonicalSourceContractBase64'"
 )
 $transportDirectory = $null
 $backupDirectory = $null
@@ -605,6 +692,9 @@ try {
         elseif ($process.ExitCode -eq 43) {
             'The restored Pi gateway installation is incomplete.'
         }
+        elseif ($process.ExitCode -eq 44) {
+            'The deployed Pi gateway source or requirements differ from the canonical laptop source.'
+        }
         else {
             "Remote backup failed with exit code $($process.ExitCode)."
         }
@@ -630,7 +720,7 @@ try {
     $partialArchivePath = $null
 
     $metadata = [ordered] @{
-        schema = 'arm-pi-recovery-backup.local.v2'
+        schema = 'arm-pi-recovery-backup.local.v3'
         capturedAtUtc = (Get-Date).ToUniversalTime().ToString('o')
         sshTarget = $remoteTarget
         sshPort = $Port

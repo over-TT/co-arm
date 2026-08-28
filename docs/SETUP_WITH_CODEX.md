@@ -376,9 +376,8 @@ authorizing deployment or restart.
 reviewed drop-in; it is not first-time activation.
 
 Fresh physical-UART activation is a separate, reversible commissioning gate for
-an existing prepared Pi. After the operator confirms in the current run that
-the mechanism is supported, use one reviewed argument set for activation and
-its dormant rollback:
+an existing prepared Pi. Use one reviewed argument set for activation and its
+dormant rollback:
 
 ```powershell
 $armMode = @{
@@ -393,19 +392,20 @@ $armMode = @{
 }
 
 .\software\operations\scripts\set-arm-gateway-mode.ps1 `
-  @armMode -Mode Activate -ConfirmedArmSupported
+  @armMode -Mode Activate
 
-# Reversible dormant rollback; requires fresh support confirmation again.
+# Reversible dormant rollback.
 .\software\operations\scripts\set-arm-gateway-mode.ps1 `
-  @armMode -Mode Deactivate -ConfirmedArmSupported
+  @armMode -Mode Deactivate
 ```
 
 The operation does not configure the UART overlay or serial console. Activation
 refuses until those prerequisites and `/dev/serial0` are already correct. It
 verifies the exact installed base unit and staged drop-in digest, seeds or
 retains the fail-closed latch, restarts deliberately, then authenticates the
-expected controller/firmware and four fresh torque-off stationary joints with
-STOP and inspection latched. Deactivation removes only that reviewed drop-in,
+expected controller/firmware, required controller capabilities, and four fresh
+torque-off stationary joints with STOP and inspection latched. Deactivation
+removes only that reviewed drop-in,
 retains the latch, restarts dormant, and proves that no physical controller port
 or unexpected drop-in remains. Already-correct modes are verified without a
 restart. Neither mode reboots, deploys, clears STOP, takes torque, moves, or
@@ -418,6 +418,41 @@ After deployment, verify separately:
 - loopback-only listener;
 - token ownership/mode without printing its content;
 - controller link, servo bus, STOP/torque/telemetry, and camera state.
+
+### 7.1 Keep every Pi mutation recoverable
+
+The checkout is the reusable source of truth. Do not edit an ordinary gateway
+module only on the Pi. Before a reachable persistent Pi change, take a protected
+snapshot when useful prior state exists; after a successful deployment,
+calibration, Base-reference, service/UART/boot, or network change, always take
+and verify a new one:
+
+```powershell
+$piBackup = @{
+  HostName = "<pi-host-or-address>"
+  Port = $sshPort
+  UserName = "<pi-service-user>"
+  ServiceGroup = "<pi-service-group>"
+  IdentityFile = $identityFile
+  KnownHostsFile = $knownHostsFile
+  ExpectedHostName = "<exact-pi-hostname>"
+  ExpectedRootDevice = "<exact-root-device>"
+  ExpectedBootDevice = "<exact-boot-device>"
+  DirectLanAddressCidr = "<expected-address/cidr>"
+  DirectLanProfilePath = "<exact-/etc/netplan/profile.yaml>"
+}
+.\software\operations\scripts\backup-arm-pi.ps1 @piBackup
+```
+
+The backup freezes the deployed files and refuses to complete unless all 13
+reviewed gateway modules and `software/operations/requirements-pi.txt` match
+the exact SHA-256 hashes from this checkout. It also records device-specific
+calibration, safety/recovery gates, services, network/SSH/VNC state, boot and
+optional USB-media evidence. Archives live under the ignored, owner-only
+`software/runtime/robot-gateway/pi-backups/`; they contain secrets and machine
+identity and must only rebuild that same Pi. Another person's Pi starts from
+the reviewed source and creates its own credentials, commissioning evidence,
+and protected snapshot history.
 
 ## 8. Connect the laptop to REAL
 
