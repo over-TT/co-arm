@@ -815,6 +815,11 @@ class IsaacCameraProvider:
                 "horizontal": float(nominal_fov["horizontal"]),
                 "vertical": float(nominal_fov["vertical"]),
             },
+            "simulatedPinholeFitAxis": _SIM_CAMERA_PROFILE.projection.nominal_fit_axis,
+            "simulatedPinholeFieldOfViewDegrees": {
+                "horizontal": _SIM_CAMERA_PROFILE.projection.horizontal_fov_deg,
+                "vertical": _SIM_CAMERA_PROFILE.projection.vertical_fov_deg,
+            },
             "captureProfiles": {
                 "survey": {
                     "width": _SIM_CAMERA_PROFILE.survey.width_px,

@@ -19,6 +19,13 @@ AF state/lens metadata together with visible fine detail in the subject region.
 The older OV5647 path remains a fixed-focus compatibility profile, not the
 current reference camera.
 
+The simulator is deliberately separate from that physical-lens contract. Its
+2304 x 1296 square-pixel pinhole model fits the nominal 102 degree horizontal
+axis and therefore has a 69.57 degree effective vertical axis, not the physical
+lens's nominal 67 degrees. SIM projection metadata exposes that effective FOV
+and its fit axis. On REAL, the nominal 102 x 67 degree values are framing hints,
+not calibrated pixel-to-desk geometry.
+
 ## Camera ray convention
 
 - Camera servo `0 deg` points along the forearm.
@@ -42,6 +49,12 @@ kinematic endpoint.
 | `arm_scene` | Calculated side-view joints, tip, floor, and optical ray from measured angles | Not real pixels; does not show obstacles or framing |
 | `arm_look` survey/detail | A newly captured upright JPEG plus near-capture pose and metadata | Proves only what is visible in that frame |
 | `arm_detail` | A bounded crop from a retained full-resolution capture | No movement and no new photograph |
+
+Use `deskProjection` numerically only when its `status` starts with
+`available_`. In particular, `unavailable_uncalibrated` on REAL means the
+camera intrinsics, lens distortion, mount extrinsics, or desk registration are
+not sufficient to convert normalized pixels into desk millimetres or Base
+bearing.
 
 Capture retention is bounded. Treat the source token as ephemeral runtime data,
 not a durable public identifier.

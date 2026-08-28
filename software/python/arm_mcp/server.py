@@ -40,7 +40,7 @@ from .config import (
 PROTOCOL_VERSION = "2025-06-18"
 SUPPORTED_PROTOCOL_VERSIONS = {"2024-11-05", "2025-03-26", PROTOCOL_VERSION}
 SERVER_NAME = "arm"
-SERVER_VERSION = "1.7.0"
+SERVER_VERSION = "1.8.0"
 
 # Friendly names are what the operator says out loud, so they are what the
 # model gets. The gateway only knows joint_N, so the mapping is pinned here.
@@ -1742,6 +1742,29 @@ def _capture_camera_profile(value: Any) -> dict[str, Any] | None:
             "captureProfiles": bounded_profiles,
         }
     )
+    simulated_fov = value.get("simulatedPinholeFieldOfViewDegrees")
+    simulated_fit_axis = value.get("simulatedPinholeFitAxis")
+    if simulated_fov is not None or simulated_fit_axis is not None:
+        if (
+            not isinstance(simulated_fov, dict)
+            or simulated_fit_axis not in {"horizontal", "vertical"}
+        ):
+            return None
+        simulated_horizontal = simulated_fov.get("horizontal")
+        simulated_vertical = simulated_fov.get("vertical")
+        if any(
+            isinstance(candidate, bool)
+            or not isinstance(candidate, (int, float))
+            or not math.isfinite(float(candidate))
+            or not 0 < float(candidate) < 180
+            for candidate in (simulated_horizontal, simulated_vertical)
+        ):
+            return None
+        cleaned["simulatedPinholeFitAxis"] = simulated_fit_axis
+        cleaned["simulatedPinholeFieldOfViewDegrees"] = {
+            "horizontal": float(simulated_horizontal),
+            "vertical": float(simulated_vertical),
+        }
     return cleaned
 
 
@@ -1911,7 +1934,16 @@ def _camera_desk_projection(
             "reason": "The SIM photograph has incomplete measured joint angles.",
         }
     geometry, _, _ = _scene_geometry(state)
-    field_of_view = camera_profile["nominalFieldOfViewDegrees"]
+    field_of_view = camera_profile.get("simulatedPinholeFieldOfViewDegrees")
+    if not isinstance(field_of_view, dict):
+        return {
+            **unavailable,
+            "status": "unavailable_sim_projection_profile",
+            "reason": (
+                "The SIM capture did not expose the effective pinhole field of "
+                "view used to render this frame."
+            ),
+        }
     horizontal_fov = float(field_of_view["horizontal"])
     vertical_fov = float(field_of_view["vertical"])
     horizontal_scale = math.tan(math.radians(horizontal_fov) / 2.0)
@@ -2023,6 +2055,11 @@ def _camera_desk_projection(
         "fovDeg": {
             "horizontal": horizontal_fov,
             "vertical": vertical_fov,
+        },
+        "fovProvenance": {
+            "source": "effective_simulated_pinhole_projection",
+            "fitAxis": camera_profile["simulatedPinholeFitAxis"],
+            "referenceNominalDeg": camera_profile["nominalFieldOfViewDegrees"],
         },
         "opticalOriginOffsetMm": SIM_OPTICAL_ORIGIN_OFFSET_MM,
         "calibration": (

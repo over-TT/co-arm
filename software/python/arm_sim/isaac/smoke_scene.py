@@ -421,7 +421,7 @@ def main() -> int:
         "limitations": [
             "camera intrinsics, distortion, extrinsics, and mount pitch are uncalibrated",
             "autofocus and depth of field are not modeled",
-            "detail and survey currently share the same 1280 x 720 render",
+            "detail and survey currently share the same 2304 x 1296 render",
             "arm inertias, servo dynamics, backlash, friction, and contact are not calibrated",
             "simulator pixels are not live-device or physical-outcome proof",
         ],

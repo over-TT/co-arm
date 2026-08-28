@@ -11,6 +11,57 @@ import pytest
 from arm_mcp import server
 
 
+def _module3_wide_profile(*, simulated: bool = False) -> dict[str, object]:
+    profile: dict[str, object] = {
+        "id": "module3-wide",
+        "productName": "Raspberry Pi Camera Module 3 Wide",
+        "sensorModel": "imx708",
+        "lensVariant": "wide",
+        "nativeDimensions": {"width": 4608, "height": 2592},
+        "nominalFocalLengthMm": 2.75,
+        "nominalFieldOfViewDegrees": {"horizontal": 102.0, "vertical": 67.0},
+        "captureProfiles": {
+            "survey": {"width": 2304, "height": 1296},
+            "detail": {"width": 4608, "height": 2592},
+        },
+    }
+    if simulated:
+        profile.update(
+            {
+                "simulatedPinholeFitAxis": "horizontal",
+                "simulatedPinholeFieldOfViewDegrees": {
+                    "horizontal": 102.0,
+                    "vertical": 69.56998,
+                },
+            }
+        )
+    return profile
+
+
+def _projection_state(camera_degrees: float = 55.0) -> dict[str, object]:
+    return {
+        "connection": "online",
+        "bus": "online",
+        "stopped": False,
+        "collisionSuspected": False,
+        "floorGuard": {
+            "enabled": True,
+            "floorMm": 40.0,
+            "geometry": {
+                "baseHeightMm": 60.0,
+                "upperArmMm": 180.0,
+                "distalMm": 220.0,
+            },
+        },
+        "joints": [
+            {"id": "joint_1", "degrees": 0.0},
+            {"id": "joint_2", "degrees": 0.0},
+            {"id": "joint_3", "degrees": 0.0},
+            {"id": "joint_4", "degrees": camera_degrees},
+        ],
+    }
+
+
 def _health(backend: str) -> dict[str, object]:
     return {
         "status": "ok",
@@ -386,3 +437,42 @@ def test_non_object_tool_arguments_return_structured_invalid_arguments() -> None
     result = response["result"]
     assert result["isError"] is True
     assert result["structuredContent"]["error"]["code"] == "invalid_arguments"
+
+
+def test_sim_projection_uses_effective_renderer_fov_and_bumps_contract() -> None:
+    profile = server._capture_camera_profile(_module3_wide_profile(simulated=True))
+    state = _projection_state()
+
+    projection = server._camera_desk_projection(
+        {"simulated": True},
+        profile,
+        {"before": state, "after": state},
+    )
+
+    assert server.SERVER_VERSION == "1.8.0"
+    assert projection is not None
+    assert projection["status"] == "available_sim_scene_model"
+    assert projection["fovDeg"] == {
+        "horizontal": 102.0,
+        "vertical": 69.56998,
+    }
+    assert projection["fovProvenance"] == {
+        "source": "effective_simulated_pinhole_projection",
+        "fitAxis": "horizontal",
+        "referenceNominalDeg": {"horizontal": 102.0, "vertical": 67.0},
+    }
+
+
+def test_authored_sim_projection_refuses_nominal_fov_as_renderer_truth() -> None:
+    profile = server._capture_camera_profile(_module3_wide_profile())
+    state = _projection_state()
+
+    projection = server._camera_desk_projection(
+        {"simulated": True},
+        profile,
+        {"before": state, "after": state},
+    )
+
+    assert projection is not None
+    assert projection["status"] == "unavailable_sim_projection_profile"
+    assert "effective pinhole field of view" in projection["reason"]

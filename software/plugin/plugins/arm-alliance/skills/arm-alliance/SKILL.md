@@ -58,3 +58,10 @@ For camera work, Base changes the direction around the desk,
 Shoulder/Elbow change height and distance, and Camera changes aim. The reference
 build uses Camera Module 3 Wide with autofocus. Judge focus from the returned
 image, not only from a successful autofocus command.
+
+On REAL, the camera's nominal 102 x 67 degree FOV is a framing hint, not a
+pixel-to-desk calibration. Use `deskProjection` numerically only when its
+`status` starts with `available_`; `unavailable_uncalibrated` forbids converting
+pixels to desk millimetres or Base bearing. SIM may expose its separate
+effective square-pixel pinhole projection (102 x 69.57 degrees, fitted on the
+horizontal axis); never treat that authored SIM model as physical-camera proof.

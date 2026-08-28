@@ -344,8 +344,8 @@
     },
     {
       "path": "software/plugin/plugins/arm-alliance/skills/arm-alliance/SKILL.md",
-      "bytes": 2487,
-      "sha256": "2a84873defebfd84bc578496c767c1810c0bb8a087b184b9db164bda03ce9ccf"
+      "bytes": 2948,
+      "sha256": "931c112bac427e9fc5abd48f177379facc0fead5849f230bc74f6e1653334051"
     },
     {
       "path": "software/python/README.md",
@@ -374,8 +374,8 @@
     },
     {
       "path": "software/python/arm_mcp/server.py",
-      "bytes": 132215,
-      "sha256": "1b682f93506ed4912d88de2927928ae25af1a61c3b0cd901db97291f0732ebdc"
+      "bytes": 133841,
+      "sha256": "c9e010f04a893e0f794a22da8b3fc0f0a4015dd76586556ae805bf8d3af7f282"
     },
     {
       "path": "software/python/arm_mcp/tests/test_config.py",
@@ -384,8 +384,8 @@
     },
     {
       "path": "software/python/arm_mcp/tests/test_protocol.py",
-      "bytes": 13215,
-      "sha256": "f2aa20f49ab8425f3fd29726f134a4f83a7e01bb54b17a7c726a8abe94fabf61"
+      "bytes": 16129,
+      "sha256": "a96a28bbc5fa37ce8d9e8600f88d64f3b6076fe476c9c6df412705dd5c0ef1f9"
     },
     {
       "path": "software/python/arm_mcp/tests/test_source_index.py",
@@ -394,8 +394,8 @@
     },
     {
       "path": "software/python/arm_sim/README.md",
-      "bytes": 1853,
-      "sha256": "e11d89b64d1ed82628f2129fd4b478ba178c8bda857f3efa85c7cde79f08b432"
+      "bytes": 2331,
+      "sha256": "d4fcdec318f2dfaa731cc8e4d375b4b1c1cf75d7a93df83d81659e1d160678cf"
     },
     {
       "path": "software/python/arm_sim/__init__.py",
@@ -429,13 +429,13 @@
     },
     {
       "path": "software/python/arm_sim/bridge/protocol.py",
-      "bytes": 20159,
-      "sha256": "df912e7f226d9732690e8d9404a8f88d2200cb364fd4870a22e41b9c777fdb21"
+      "bytes": 20322,
+      "sha256": "376bfcfcafc2d2b5a2afd2541c7e79b430b5214f884daa7cd0ff525e58eb0060"
     },
     {
       "path": "software/python/arm_sim/bridge/server.py",
-      "bytes": 9198,
-      "sha256": "1db96c2a27bbfd0bdc8b75bdf07692a7e05f0bc2ac1331fc2d161e09b03188d7"
+      "bytes": 10421,
+      "sha256": "c9512198d795df8401ba676a665c71cefaf58328af4eecb00a20b68f62e936d2"
     },
     {
       "path": "software/python/arm_sim/bridge/sim_gateway.py",
@@ -449,8 +449,8 @@
     },
     {
       "path": "software/python/arm_sim/camera_profile.py",
-      "bytes": 10356,
-      "sha256": "8c4029ec6861d1f0707010ba2079b35533460217ef0036c6010c46759968a74b"
+      "bytes": 11397,
+      "sha256": "c45449894dbb6284aac23ec7fb03d8f8669a8e5970c4f41abfe943e598bc72ed"
     },
     {
       "path": "software/python/arm_sim/config/arm_model.json",
@@ -459,8 +459,8 @@
     },
     {
       "path": "software/python/arm_sim/config/camera_profile.json",
-      "bytes": 3075,
-      "sha256": "2d1aee054d196ad556affa5917226a668a064e22043510fb288edb7ba1ad3116"
+      "bytes": 3281,
+      "sha256": "f517f80a6c8b6824150e93cc963b093cfd3b263a6322f7094bf1f67b7ece32df"
     },
     {
       "path": "software/python/arm_sim/isaac/__init__.py",
@@ -469,13 +469,18 @@
     },
     {
       "path": "software/python/arm_sim/isaac/bridge_server.py",
-      "bytes": 22454,
-      "sha256": "f2731bf50c1283346d8a66e67537506aecab057aa38cbaff9d6a9eb436611c74"
+      "bytes": 22832,
+      "sha256": "8bd9dc8c4f785c20bf399c3b6403809bec5568d19af85d21afacf13800f38d46"
     },
     {
       "path": "software/python/arm_sim/isaac/import_arm.py",
       "bytes": 2939,
       "sha256": "5fa2574fb81447c4338898c03ef37a80a22600810836e607030bfda90142ebd0"
+    },
+    {
+      "path": "software/python/arm_sim/isaac/runtime_policy.py",
+      "bytes": 4529,
+      "sha256": "ef60647550aca7a4b19f2a299800e00e5d935038f2c9b7b69c85833bffc2aca2"
     },
     {
       "path": "software/python/arm_sim/isaac/scene_factory.py",
@@ -484,8 +489,8 @@
     },
     {
       "path": "software/python/arm_sim/isaac/smoke_scene.py",
-      "bytes": 16109,
-      "sha256": "0f2818acf60ea14aea806cf03f45ec426f13bd515b7688ba8176f5dd9286c108"
+      "bytes": 16110,
+      "sha256": "36950aacfee1cf9785bb61d09883ce8bfaa13b86e368c28d336939a2d3de740e"
     },
     {
       "path": "software/python/arm_sim/isaac/view_scene.py",
@@ -499,23 +504,28 @@
     },
     {
       "path": "software/python/arm_sim/tests/test_bridge_entrypoints.py",
-      "bytes": 10878,
-      "sha256": "ad17105c3f47d0435060cc9dd4031737d740bb73ea48f2b49cabebfa5d57b074"
+      "bytes": 11311,
+      "sha256": "1d582f25f13e36285058e258b2ba6258f36d0fe05e434ee33fd38aac59d2364c"
     },
     {
       "path": "software/python/arm_sim/tests/test_bridge_ipc.py",
-      "bytes": 6760,
-      "sha256": "40a5ef63d6405bc6d9179c95dc80114a3329fbcc99e0e8ad1e67a2337e49f9e8"
+      "bytes": 8276,
+      "sha256": "b6fb14a9f28aff6b65283a44d31d76dbe306630084e636fb5b4ca331f6d5aa1c"
     },
     {
       "path": "software/python/arm_sim/tests/test_bridge_protocol.py",
-      "bytes": 4329,
-      "sha256": "d82bb1bdf4ebda1339b1d0226eee4d52c12f4e2bdea6ad7979af7978543aebab"
+      "bytes": 4463,
+      "sha256": "9fce91bcfeef1ae1c1db623af39463baf4e81859b55221017497dbb66c8904ce"
     },
     {
       "path": "software/python/arm_sim/tests/test_camera_profile.py",
-      "bytes": 3252,
-      "sha256": "96d279cd5893491072bdac76e58cf84d7b48df25c675cbd4beca3029e318e22f"
+      "bytes": 4248,
+      "sha256": "9069ee3bfa1bb0d7f128ee768bae81e0dd01b6fca31ccd6435e128399acb8241"
+    },
+    {
+      "path": "software/python/arm_sim/tests/test_isaac_runtime_policy.py",
+      "bytes": 2483,
+      "sha256": "f692d0d08f7448b1b35624fde9aa015c48156a5cec312145abd9d5373f81f5bc"
     },
     {
       "path": "software/python/arm_sim/tests/test_isaac_smoke_contract.py",
@@ -564,8 +574,8 @@
     },
     {
       "path": "software/python/robot_gateway/camera_api.py",
-      "bytes": 36796,
-      "sha256": "5180a18e17a0ade648c828e5c142406db420fb8796f0010da0a0cdc026097bc5"
+      "bytes": 38211,
+      "sha256": "3ddb89cea2ca6dec23cd5f6f9ef2b81515efa7d077ca8ffeabf41085ebee226b"
     },
     {
       "path": "software/python/robot_gateway/camera_profiles.py",
@@ -574,8 +584,8 @@
     },
     {
       "path": "software/python/robot_gateway/isaac_bridge.py",
-      "bytes": 35935,
-      "sha256": "f7cc87dd8508b7dced2523677e6aea1df01cff6f4bed900e121b50e6f43cb80e"
+      "bytes": 36248,
+      "sha256": "99c995dff3e15b130babc55f95a04d73ddd38abbbb70b92e93d9e63c607f72f5"
     },
     {
       "path": "software/python/robot_gateway/physical_arm_api.py",
@@ -654,8 +664,8 @@
     },
     {
       "path": "software/python/robot_gateway/tests/test_isaac_bridge.py",
-      "bytes": 8672,
-      "sha256": "026df4bc0afbf853e46048b829cb241ae2476043700447ddf9675348e27705d7"
+      "bytes": 8901,
+      "sha256": "4fc771f1229bbcf2dbeec952cb731bd57867d5282750ff3b3b09cd536b89be59"
     },
     {
       "path": "software/python/robot_gateway/tests/test_physical_arm_api.py",

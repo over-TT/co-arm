@@ -26,9 +26,21 @@ from .protocol import (
 LOOPBACK_HOST = "127.0.0.1"
 DEFAULT_PORT = 8790
 DEFAULT_READ_TIMEOUT_SECONDS = 5.0
+_MAX_VALIDATION_REASON_CHARS = 160
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+class _ResultValidationFailure(Exception):
+    def __init__(
+        self, *, protocol: str, command: str, violation: ProtocolViolation
+    ) -> None:
+        reason = " ".join(str(violation).split()) or "protocol violation"
+        self.protocol = protocol
+        self.command = command
+        self.reason = reason[:_MAX_VALIDATION_REASON_CHARS]
+        super().__init__(self.reason)
 
 
 def _valid_token(token: object) -> bool:
@@ -132,7 +144,15 @@ class LoopbackBridgeServer(socketserver.TCPServer):
                 result = self.engine.capture(profile=profile)
             else:
                 raise ProtocolViolation("unsupported command")
-        return validate_result(command, result)
+        try:
+            return validate_result(command, result)
+        except ProtocolViolation as violation:
+            raise _ResultValidationFailure(
+                protocol=PROTOCOL_NAME,
+                command=command,
+                violation=violation,
+            ) from None
+
 
 class _BridgeRequestHandler(socketserver.StreamRequestHandler):
     server: LoopbackBridgeServer
@@ -177,6 +197,20 @@ class _BridgeRequestHandler(socketserver.StreamRequestHandler):
             request_id = request.request_id
             try:
                 result = self.server.dispatch(request.command, request.params)
+            except _ResultValidationFailure as failure:
+                _LOGGER.error(
+                    "Simulator result validation failed protocol=%s command=%s reason=%s",
+                    failure.protocol,
+                    failure.command,
+                    failure.reason,
+                )
+                self._error(
+                    request_id,
+                    "ENGINE_ERROR",
+                    "Simulator returned an invalid response.",
+                    protocol=response_protocol,
+                )
+                return
             except ProtocolViolation:
                 self._error(
                     request_id,

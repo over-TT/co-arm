@@ -102,7 +102,7 @@ class IsaacBridgeAdapterTests(unittest.TestCase):
         frame = camera.capture()
         self.assertIsInstance(frame, CapturedFrame)
         self.assertEqual(frame.mime_type, "image/jpeg")
-        self.assertEqual((frame.width, frame.height), (1280, 720))
+        self.assertEqual((frame.width, frame.height), (2304, 1296))
         self.assertEqual(frame.sensor_model, "isaac-imx708-wide-provisional")
         self.assertEqual(frame.sha256, hashlib.sha256(frame.data).hexdigest())
         self.assertEqual(camera.backend_identity["backendId"], "sim")
@@ -111,6 +111,11 @@ class IsaacBridgeAdapterTests(unittest.TestCase):
             profile["id"],
             "rpi-camera-module-3-wide-imx708-nominal-v1",
         )
+        self.assertEqual(profile["simulatedPinholeFitAxis"], "horizontal")
+        self.assertEqual(
+            profile["simulatedPinholeFieldOfViewDegrees"],
+            {"horizontal": 102.0, "vertical": 69.56998},
+        )
         with patch.object(
             self.client,
             "capture",
@@ -118,7 +123,7 @@ class IsaacBridgeAdapterTests(unittest.TestCase):
         ) as bridge_capture:
             survey = camera.capture(profile="survey")
         bridge_capture.assert_called_once_with(profile="survey")
-        self.assertEqual((survey.width, survey.height), (1280, 720))
+        self.assertEqual((survey.width, survey.height), (2304, 1296))
         evidence = service.capture()
         self.assertTrue(evidence["simulated"])
         self.assertEqual(evidence["source"], "isaac_rgb")

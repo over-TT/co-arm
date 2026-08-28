@@ -65,6 +65,10 @@ class BridgeProtocolTests(unittest.TestCase):
             validated["cameraProfile"]["profileId"],
             "rpi-camera-module-3-wide-imx708-nominal-v1",
         )
+        self.assertEqual(
+            validated["cameraProfile"]["projection"]["nominalFitAxis"],
+            "horizontal",
+        )
         tampered = dict(result)
         tampered_profile = dict(result["cameraProfile"])
         tampered_profile["privatePrimPath"] = "/World/Target"

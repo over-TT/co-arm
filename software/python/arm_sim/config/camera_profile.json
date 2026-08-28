@@ -33,30 +33,31 @@
     "identityConfidence": "simulated_model",
     "renderProfiles": {
       "survey": {
-        "widthPx": 1280,
-        "heightPx": 720
+        "widthPx": 2304,
+        "heightPx": 1296
       },
       "detail": {
-        "widthPx": 1280,
-        "heightPx": 720,
-        "limitation": "Detail currently uses the same 1280 x 720 render as survey; native 4608 x 2592 detail rendering is not modeled."
+        "widthPx": 2304,
+        "heightPx": 1296,
+        "limitation": "Detail currently uses the same 2304 x 1296 render as survey; native 4608 x 2592 detail rendering is not modeled."
       }
     },
     "projection": {
       "model": "pinhole",
       "focalLengthMm": 2.75,
       "horizontalApertureMm": 6.791934,
-      "verticalApertureMm": 3.640371,
+      "verticalApertureMm": 3.820463,
       "principalPointNormalized": [
         0.5,
         0.5
       ],
-      "matchedNominalFieldOfViewDeg": {
+      "nominalFitAxis": "horizontal",
+      "effectivePinholeFieldOfViewDeg": {
         "horizontal": 102.0,
-        "vertical": 67.0
+        "vertical": 69.56998
       },
-      "status": "manufacturer_nominal_fov_matched_pinhole_approximation",
-      "limitation": "The renderer matches the advertised horizontal and vertical field of view with an undistorted pinhole approximation. It is not a calibrated model of the wide lens."
+      "status": "horizontal_nominal_fov_fit_square_pixel_pinhole_approximation",
+      "limitation": "The 2304 x 1296 square-pixel renderer fits the advertised 102 degree horizontal field of view. Its resulting 69.57 degree vertical pinhole field differs from the advertised 67 degrees because an undistorted 16:9 pinhole cannot match both nominal axes simultaneously. This is not a calibrated model of the wide lens."
     },
     "focusModel": {
       "physicalTargetCapability": "powered_autofocus",

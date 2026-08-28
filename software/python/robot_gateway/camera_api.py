@@ -182,8 +182,14 @@ def _provider_camera_profile(provider: CameraProvider) -> dict[str, object] | No
         "nominalFieldOfViewDegrees",
         "captureProfiles",
     }
-    if set(value) != required:
+    optional = {
+        "simulatedPinholeFitAxis",
+        "simulatedPinholeFieldOfViewDegrees",
+    }
+    if not required <= set(value) <= required | optional:
         raise ValueError("camera provider camera profile has invalid fields")
+    if bool(optional & set(value)) and not optional <= set(value):
+        raise ValueError("camera provider simulated projection is incomplete")
     fov = value.get("nominalFieldOfViewDegrees")
     if not isinstance(fov, Mapping) or set(fov) != {"horizontal", "vertical"}:
         raise ValueError("camera provider field of view is invalid")
@@ -193,7 +199,7 @@ def _provider_camera_profile(provider: CameraProvider) -> dict[str, object] | No
         CAPTURE_PROFILE_DETAIL,
     }:
         raise ValueError("camera provider capture profiles are invalid")
-    return {
+    normalized = {
         "id": _bounded_profile_text(value.get("id"), "id"),
         "productName": _bounded_profile_text(value.get("productName"), "productName"),
         "sensorModel": _bounded_profile_text(value.get("sensorModel"), "sensorModel"),
@@ -224,6 +230,32 @@ def _provider_camera_profile(provider: CameraProvider) -> dict[str, object] | No
             ),
         },
     }
+    if optional <= set(value):
+        fit_axis = value.get("simulatedPinholeFitAxis")
+        simulated_fov = value.get("simulatedPinholeFieldOfViewDegrees")
+        if fit_axis not in {"horizontal", "vertical"}:
+            raise ValueError("camera provider simulated pinhole fit axis is invalid")
+        if (
+            not isinstance(simulated_fov, Mapping)
+            or set(simulated_fov) != {"horizontal", "vertical"}
+        ):
+            raise ValueError("camera provider simulated pinhole field of view is invalid")
+        normalized["simulatedPinholeFitAxis"] = fit_axis
+        normalized["simulatedPinholeFieldOfViewDegrees"] = {
+            "horizontal": _bounded_profile_number(
+                simulated_fov.get("horizontal"),
+                "simulated horizontal field of view",
+                minimum=0.1,
+                maximum=179.9,
+            ),
+            "vertical": _bounded_profile_number(
+                simulated_fov.get("vertical"),
+                "simulated vertical field of view",
+                minimum=0.1,
+                maximum=179.9,
+            ),
+        }
+    return normalized
 
 
 def _provider_accepts_capture_profile(provider: CameraProvider) -> bool:

@@ -197,6 +197,7 @@ def _validate_camera_profile_metadata(value: object) -> dict[str, object]:
         projection,
         required={
             "model",
+            "nominalFitAxis",
             "horizontalFovDeg",
             "verticalFovDeg",
             "status",
@@ -228,6 +229,9 @@ def _validate_camera_profile_metadata(value: object) -> dict[str, object]:
         "renderProfiles": normalized_render,
         "projection": {
             "model": _metadata_id(projection["model"], "projection.model"),
+            "nominalFitAxis": _metadata_id(
+                projection["nominalFitAxis"], "projection.nominalFitAxis"
+            ),
             "horizontalFovDeg": _bounded_float(
                 projection["horizontalFovDeg"], 0.01, 179.0, "horizontalFovDeg"
             ),

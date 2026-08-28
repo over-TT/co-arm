@@ -39,6 +39,14 @@ class BridgeEntrypointContractTests(unittest.TestCase):
         self.assertIn("Gf.Quatd(0.0, Gf.Vec3d(1.0, 0.0, 0.0))", source)
         self.assertIn("cv2.imencode", source)
         self.assertIn("cv2.imdecode", source)
+        decode_index = source.index("decoded = cv2.imdecode")
+        decoded_quality_index = source.index(
+            "decoded_quality = assess_frame_quality(decoded)"
+        )
+        self.assertGreater(decoded_quality_index, decode_index)
+        self.assertIn("if not decoded_quality.passed", source)
+        self.assertIn("np.max(np.abs(desired - current))", source)
+        self.assertIn("interpolation_step_count(", source)
         self.assertIn('set_joint_targets(targets={"joint_4": 5.0}', source)
         self.assertIn('engine._set_positions_immediate({"joint_4": 40.0})', source)
         self.assertIn("os._exit(exit_code)", source)

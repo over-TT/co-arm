@@ -1,6 +1,6 @@
 # Status and evidence
 
-Last public-source review: **2026-08-26**.
+Last public-source review: **2026-08-28**.
 
 This page reports evidence, not aspiration. Historical hardware statements are
 dated. Nothing in the repository is fresh live state.
@@ -9,21 +9,23 @@ dated. Nothing in the repository is fresh live state.
 
 | Area | Included state | Evidence tier |
 | --- | --- | --- |
-| Dashboard | Standalone React/Vite Overview, guarded Control, bounded Live Follow, camera/calibration controls, Guide, Control Center, and SIM/REAL selection | Source inspection; 180 tests, the 42-module production build, and the high-severity dependency audit passed |
-| Local backend | Loopback-only FastAPI dashboard runtime, browser session boundary, Control Center, camera, and explicit SIM/REAL proxy routing | Source inspection; included in the 714-test Python run |
-| Pi gateway | Bearer authentication, four-joint state/calibration, floor guard, plan/apply/sequence, Live Follow, camera evidence, physical commissioning, and Arm HAT client | Source inspection; included in the 714-test Python run |
+| Dashboard | Standalone React/Vite Overview, guarded Control, bounded Live Follow, camera/calibration controls, Guide, Control Center, and SIM/REAL selection | Source inspection; unchanged in the 2026-08-28 camera/runtime port; the previous 180 tests, 42-module production build, and high-severity dependency audit passed |
+| Local backend | Loopback-only FastAPI dashboard runtime, browser session boundary, Control Center, camera, and explicit SIM/REAL proxy routing | Source inspection; included in the 725-test Python run |
+| Pi gateway | Bearer authentication, four-joint state/calibration, floor guard, plan/apply/sequence, Live Follow, camera evidence, physical commissioning, and Arm HAT client | Source inspection; included in the 725-test Python run |
 | Arm MCP/plugin | Typed Arm tools, explicit SIM/REAL identity verification, structured MCP output, repo-local Codex marketplace, setup skill, and configured-arm runtime skill | 49 focused MCP/index tests passed; the plugin and both skills validated; credentials and installed MCP configuration are intentionally local |
-| Isaac Sim | Four-joint URDF/model, deterministic desk/camera scene, persistent bridge, simulator HTTP gateway, and supervised launcher | Source/contracts tested; URDF/JSON package resources passed an installed-wheel smoke; Isaac runtime and vendor assets are not bundled |
+| Isaac Sim | Four-joint URDF/model, deterministic desk/camera scene, bounded interpolation and frame-quality policy, persistent bridge, simulator HTTP gateway, and supervised launcher | Source/contracts tested; effective square-pixel Camera Module 3 Wide projection is explicit; Isaac runtime and vendor assets are not bundled |
 | Arm HAT | `arm-hat-2.7.2` ESP32 controller source, shared library, and protocol fixtures | 17 host tests passed; device build/flash remains a separate tier |
 | Operations | Pi service templates, deployment, reversible physical-UART mode control, status, backup/restore/imaging, firmware compile helper, and Isaac launcher | Source/contracts tested; six retained PowerShell scripts parsed |
 | Printable parts | All 12 current printed parts: both Base gears, the Base stack, arm links, servo mounts/covers, and camera holder/cover | Files inspected; final print settings are not included |
 
-Current export-worktree verification completed on 2026-08-26:
+Current camera/runtime export verification completed on 2026-08-28. Dashboard,
+packaging, PowerShell, and dependency files were unchanged; their prior
+2026-08-26 evidence remains listed separately below:
 
 - gateway, backend, MCP, Isaac contract, deployment/recovery, and source tests:
-  **714 passed**, plus **9 nested subtests**; four upstream Starlette
+  **725 passed**; four upstream Starlette
   deprecation warnings remain visible;
-- dashboard: **180 passed**, followed by a successful TypeScript/Vite
+- unchanged dashboard evidence from 2026-08-26: **180 passed**, followed by a successful TypeScript/Vite
   production build with 42 modules transformed;
 - an isolated PEP 517 build produced and cleanly installed the
   `co_arm_stack-0.1.0-py3-none-any.whl` artifact; `pip check` and a
@@ -41,8 +43,8 @@ Current export-worktree verification completed on 2026-08-26:
 - the exact Python lock, Raspberry Pi requirements, and complete dashboard
   dependency graph returned no known vulnerabilities from their current audit
   services;
-- the source manifest is current across **151 software files**, and the
-  repository checker reviewed **225 files** with only the documented missing
+- the source manifest is current across **153 software files**, and the
+  repository checker reviewed **227 files** with only the documented missing
   license and approved-media warnings. The earlier missing-CAD warning is gone
   because all 12 current 3MF files are now included.
 

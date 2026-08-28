@@ -131,6 +131,12 @@ from arm_sim.isaac.scene_factory import (
     build_smoke_scene,
     smoke_scene_is_current,
 )
+from arm_sim.isaac.runtime_policy import (
+    assess_frame_quality,
+    interpolation_step_count,
+)
+
+
 def _timestamp() -> str:
     return (
         datetime.now(timezone.utc)
@@ -337,9 +343,13 @@ class IsaacSimBridgeEngine(BridgeEngine):
             desired[self._dof_indices[JOINT_IDS.index(joint_id)]] = math.radians(
                 float(degrees)
             )
-        interpolation_steps = max(
-            1,
-            int(math.ceil(duration_ms * PHYSICS_HZ / 1000.0)),
+        maximum_angular_delta_degrees = math.degrees(
+            float(np.max(np.abs(desired - current)))
+        )
+        interpolation_steps = interpolation_step_count(
+            maximum_angular_delta_degrees=maximum_angular_delta_degrees,
+            duration_ms=duration_ms,
+            physics_hz=PHYSICS_HZ,
         )
         self._revision += 1
         self._moving = True
@@ -382,13 +392,11 @@ class IsaacSimBridgeEngine(BridgeEngine):
         if final_rgb is None:
             raise RuntimeError("Isaac RTX camera returned no RGB frame")
         rgb_u8 = _rgb_to_u8(final_rgb)
-        non_black_fraction = float((np.max(rgb_u8, axis=2) >= 8).mean())
-        variance = float(rgb_u8.var())
-        if variance < 4.0 or non_black_fraction < 0.02:
+        raw_quality = assess_frame_quality(rgb_u8)
+        if not raw_quality.passed:
             raise RuntimeError(
                 "Isaac RTX camera returned a blank or uniform frame "
-                f"(min={int(rgb_u8.min())}, max={int(rgb_u8.max())}, "
-                f"variance={variance:.3f}, nonBlackFraction={non_black_fraction:.5f})"
+                f"({raw_quality.summary()})"
             )
         success, encoded = cv2.imencode(
             ".jpg",
@@ -401,6 +409,12 @@ class IsaacSimBridgeEngine(BridgeEngine):
         decoded = cv2.imdecode(np.frombuffer(jpeg, dtype=np.uint8), cv2.IMREAD_COLOR)
         if decoded is None or decoded.shape[:2] != rgb_u8.shape[:2]:
             raise RuntimeError("Encoded Isaac JPEG failed a decode round trip")
+        decoded_quality = assess_frame_quality(decoded)
+        if not decoded_quality.passed:
+            raise RuntimeError(
+                "Encoded Isaac JPEG decoded to a blank or uniform frame "
+                f"({decoded_quality.summary()})"
+            )
         state = self._state()
         return capture_result(
             frame_id=f"isaacrgb_{self._revision}_{time.time_ns()}",
@@ -492,7 +506,7 @@ def _self_test(engine: IsaacSimBridgeEngine) -> int:
             "simulator-only evidence",
             "articulation drives, contact, camera calibration, and timing remain provisional",
             "autofocus, lens distortion, depth of field, and focus convergence are not modeled",
-            "detail currently renders the same 1280 x 720 image as survey",
+            "detail currently renders the same 2304 x 1296 image as survey",
         ],
     }
     print(json.dumps(report, sort_keys=True, separators=(",", ":")), flush=True)

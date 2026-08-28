@@ -36,6 +36,7 @@ class CameraRenderProfile:
 @dataclass(frozen=True, slots=True)
 class CameraProjection:
     model: str
+    nominal_fit_axis: str
     focal_length_mm: float
     horizontal_aperture_mm: float
     vertical_aperture_mm: float
@@ -89,6 +90,7 @@ class CameraProfile:
             },
             "projection": {
                 "model": self.projection.model,
+                "nominalFitAxis": self.projection.nominal_fit_axis,
                 "horizontalFovDeg": self.projection.horizontal_fov_deg,
                 "verticalFovDeg": self.projection.vertical_fov_deg,
                 "status": self.projection.status,
@@ -149,23 +151,33 @@ def _render_profile(value: object, name: str) -> CameraRenderProfile:
     )
 
 
-def _projection(value: object) -> CameraProjection:
+def _projection(
+    value: object,
+    *,
+    survey: CameraRenderProfile,
+) -> CameraProjection:
     projection = _mapping(value, "simulation.projection")
-    matched = _mapping(
-        projection.get("matchedNominalFieldOfViewDeg"),
-        "simulation.projection.matchedNominalFieldOfViewDeg",
+    effective = _mapping(
+        projection.get("effectivePinholeFieldOfViewDeg"),
+        "simulation.projection.effectivePinholeFieldOfViewDeg",
     )
     model = _identifier(projection.get("model"), "simulation.projection.model")
     if model != "pinhole":
         raise CameraProfileError("the current Isaac camera supports only pinhole projection")
     horizontal_fov = _positive_number(
-        matched.get("horizontal"), "projection.horizontalFovDeg", maximum=179.0
+        effective.get("horizontal"), "projection.horizontalFovDeg", maximum=179.0
     )
     vertical_fov = _positive_number(
-        matched.get("vertical"), "projection.verticalFovDeg", maximum=179.0
+        effective.get("vertical"), "projection.verticalFovDeg", maximum=179.0
     )
+    nominal_fit_axis = _identifier(
+        projection.get("nominalFitAxis"), "projection.nominalFitAxis"
+    )
+    if nominal_fit_axis not in {"horizontal", "vertical"}:
+        raise CameraProfileError("projection.nominalFitAxis must be horizontal or vertical")
     result = CameraProjection(
         model=model,
+        nominal_fit_axis=nominal_fit_axis,
         focal_length_mm=_positive_number(
             projection.get("focalLengthMm"), "projection.focalLengthMm", maximum=1_000.0
         ),
@@ -198,7 +210,13 @@ def _projection(value: object) -> CameraProjection:
         abs(calculated_horizontal - horizontal_fov) > 0.01
         or abs(calculated_vertical - vertical_fov) > 0.01
     ):
-        raise CameraProfileError("pinhole apertures do not match the declared nominal FOV")
+        raise CameraProfileError("pinhole apertures do not match the declared effective FOV")
+    aperture_aspect = result.horizontal_aperture_mm / result.vertical_aperture_mm
+    render_aspect = survey.width_px / survey.height_px
+    if abs(aperture_aspect - render_aspect) > 1e-6:
+        raise CameraProfileError(
+            "pinhole aperture aspect must match the square-pixel render aspect"
+        )
     return result
 
 
@@ -229,6 +247,13 @@ def load_camera_profile(path: Path = CAMERA_PROFILE_PATH) -> CameraProfile:
     if extrinsics.get("translationM") is not None or extrinsics.get("rpyRad") is not None:
         raise CameraProfileError("uncalibrated extrinsics must remain null")
 
+    survey = _render_profile(render_profiles.get("survey"), "survey")
+    detail = _render_profile(render_profiles.get("detail"), "detail")
+    if (survey.width_px, survey.height_px) != (detail.width_px, detail.height_px):
+        raise CameraProfileError(
+            "the current shared survey/detail renderer requires matching dimensions"
+        )
+
     return CameraProfile(
         profile_id=_identifier(root.get("profileId"), "profileId"),
         description=_text(root.get("description"), "description"),
@@ -250,9 +275,9 @@ def load_camera_profile(path: Path = CAMERA_PROFILE_PATH) -> CameraProfile:
         calibration_status=_identifier(
             calibration.get("status"), "calibration.status"
         ),
-        survey=_render_profile(render_profiles.get("survey"), "survey"),
-        detail=_render_profile(render_profiles.get("detail"), "detail"),
-        projection=_projection(simulation.get("projection")),
+        survey=survey,
+        detail=detail,
+        projection=_projection(simulation.get("projection"), survey=survey),
         document=dict(root),
     )
 

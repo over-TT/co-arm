@@ -11,12 +11,20 @@ prove physical-arm behavior. Geometry, optics, drive dynamics, backlash,
 compliance, desk registration, and contact properties remain provisional until
 measured on a particular build.
 
+The reference SIM camera uses a provisional 2304 x 1296 square-pixel pinhole
+model for Camera Module 3 Wide. It fits the advertised 102 degree horizontal
+axis, which makes the effective rendered vertical axis 69.57 degrees rather
+than the physical lens's nominal 67 degrees. An undistorted 16:9 pinhole cannot
+match both advertised axes. Intrinsics, distortion, autofocus/depth of field,
+and physical mount calibration remain unmodeled.
+
 ## Layout
 
 - `assets/desk_camera_arm.urdf` — four-joint source robot description.
 - `config/` — provisional model and camera contracts.
 - `bridge/` — authenticated loopback protocol and simulator HTTP gateway.
-- `isaac/` — URDF importer, persistent bridge, desk/camera scene, and viewer.
+- `isaac/` — URDF importer, persistent bridge, bounded motion/camera runtime
+  policy, desk/camera scene, and viewer.
 - `tests/` — source and protocol checks that do not launch Isaac.
 
 ## Checks

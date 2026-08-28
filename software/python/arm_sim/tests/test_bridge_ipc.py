@@ -11,16 +11,30 @@ from arm_sim.bridge.client import (
     BridgeTimeoutError,
 )
 from arm_sim.bridge.engine import InMemoryBridgeEngine
+from arm_sim.bridge.protocol import PROTOCOL_NAME
 from arm_sim.bridge.server import LoopbackBridgeServer
 
 
 TOKEN = "s" * 32
+PRIVATE_RESULT_TOKEN = "private-result-token-should-never-be-logged"
+UNTRUSTED_RESULT_MARKER = "unexpected-result-marker-should-never-be-logged"
 
 
 class _SlowHealthEngine(InMemoryBridgeEngine):
     def health(self) -> dict[str, object]:
         time.sleep(0.15)
         return super().health()
+
+
+class _InvalidHealthEngine(InMemoryBridgeEngine):
+    def health(self) -> dict[str, object]:
+        return {
+            "status": "ok",
+            "engine": "malformed_contract_engine",
+            "calibrationStatus": "provisional",
+            "token": PRIVATE_RESULT_TOKEN,
+            "unexpectedDiagnostic": UNTRUSTED_RESULT_MARKER,
+        }
 
 
 class _CaptureProfileRecordingEngine(InMemoryBridgeEngine):
@@ -103,6 +117,27 @@ class BridgeIpcTests(unittest.TestCase):
         with self.assertRaises(BridgeRemoteError) as raised:
             client.health()
         self.assertEqual(raised.exception.code, "UNAUTHORIZED")
+
+    def test_invalid_engine_result_is_sanitized_remotely_and_safe_locally(self) -> None:
+        server, _ = self.start_server(_InvalidHealthEngine())
+        client = BridgeClient(token=TOKEN, port=server.address[1])
+
+        with self.assertLogs("arm_sim.bridge.server", level="WARNING") as captured:
+            with self.assertRaises(BridgeRemoteError) as raised:
+                client.health()
+
+        self.assertEqual(raised.exception.code, "ENGINE_ERROR")
+        self.assertEqual(
+            raised.exception.message,
+            "Simulator returned an invalid response.",
+        )
+        logged = "\n".join(captured.output)
+        self.assertIn(f"protocol={PROTOCOL_NAME}", logged)
+        self.assertIn("command=health", logged)
+        self.assertIn("health result has unexpected fields", logged)
+        self.assertNotIn(TOKEN, logged)
+        self.assertNotIn(PRIVATE_RESULT_TOKEN, logged)
+        self.assertNotIn(UNTRUSTED_RESULT_MARKER, logged)
 
     def test_service_action_runs_on_the_serialized_engine_thread(self) -> None:
         engine = _ThreadRecordingEngine()
