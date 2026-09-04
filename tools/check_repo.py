@@ -473,6 +473,9 @@ def main() -> int:
                 warnings.append(f"unreviewed binary file: {rel}")
             continue
 
+        if "\r\n" in text:
+            failures.append(f"release text must use LF line endings: {rel}")
+
         for label, pattern in SENSITIVE_PATTERNS.items():
             for match in pattern.finditer(text):
                 if sensitive_match_is_fixture(label, path, match.group(0)):

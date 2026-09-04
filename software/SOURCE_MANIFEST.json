@@ -44,13 +44,13 @@
     },
     {
       "path": "software/dashboard/src/arm/Arm2D.test.tsx",
-      "bytes": 19645,
-      "sha256": "5c64b77cc5886a9623b331fccceda7d365b036225d569bd8f000d1b57107417e"
+      "bytes": 19290,
+      "sha256": "3f29c87c5df5193209aac89615cfa3827d2cc0bade3f2f7f18f965f72c95c8d2"
     },
     {
       "path": "software/dashboard/src/arm/Arm2D.tsx",
-      "bytes": 24802,
-      "sha256": "f451c98fca02b34fea32ef7288e3ef5c55d053fb725d5e1a1bbb11b86c1396fd"
+      "bytes": 24448,
+      "sha256": "0ceba6bdb47249ef2ad80dc0cfafb64bbea2cd4463413b491bb0986e0e10f77d"
     },
     {
       "path": "software/dashboard/src/arm/ArmControlCenter.test.tsx",
@@ -89,13 +89,13 @@
     },
     {
       "path": "software/dashboard/src/arm/SimpleArm.tsx",
-      "bytes": 109093,
-      "sha256": "b640584a69ebb5b9faf1c826528b8658801532b748c8c2d4056f5430ff12a0f9"
+      "bytes": 108580,
+      "sha256": "047cce34513fcfb6815c3b7db912c3aa1d7f35394c0ac821dbccecaa93196d1d"
     },
     {
       "path": "software/dashboard/src/arm/arm-2d.css",
-      "bytes": 6534,
-      "sha256": "7276731dc852a8b4cc8a0ce8cff824d473a8352b3f960149a5a0a235a6e04781"
+      "bytes": 6467,
+      "sha256": "03746252c6df315fde3e6a42a5251a069de686e9dcfd15b8490b0fa4a2391755"
     },
     {
       "path": "software/dashboard/src/arm/arm-control-center.css",
@@ -114,13 +114,13 @@
     },
     {
       "path": "software/dashboard/src/arm/armApi.test.ts",
-      "bytes": 22356,
-      "sha256": "1b0c3bc8d543472e4963d0e9d50e8b519f8827c772b15f058c8b867510bd53cb"
+      "bytes": 22190,
+      "sha256": "fc835124e1ec7a780a1c1b756bda3c4dad2cd5f86bd78418272df64946292cc6"
     },
     {
       "path": "software/dashboard/src/arm/armApi.ts",
-      "bytes": 30837,
-      "sha256": "ad20ab0ec3d93dea9aadd592838f69bece45d1045c2574bec3c1a0b252e5dfa5"
+      "bytes": 30585,
+      "sha256": "94761670ed20540fb8b516510134fa9674496f8267a9f998fe53c0f9452bffa8"
     },
     {
       "path": "software/dashboard/src/arm/armKinematics.test.ts",
@@ -139,8 +139,8 @@
     },
     {
       "path": "software/dashboard/src/arm/armTypes.ts",
-      "bytes": 22887,
-      "sha256": "6588459df90243cbda06235795681c02e2c011a16d1a5baf9ef03f7e593ecff3"
+      "bytes": 22456,
+      "sha256": "a8a2a1c473e1143a11f49b2bbe3e49e94cc442a16ee61167b1fc5d4f22da04f8"
     },
     {
       "path": "software/dashboard/src/arm/simple-arm.css",
@@ -189,8 +189,8 @@
     },
     {
       "path": "software/firmware/ARM_HAT_CONTROLLER_V1.md",
-      "bytes": 34224,
-      "sha256": "bb5d7c42a09290878a5c954daf6e4c6a9e59caa1b141aa0060c33da04647f7c0"
+      "bytes": 33797,
+      "sha256": "ab880f29bd2fe4e2f576ad8e09f239906a73f4c2eae26f4d1eba5fcca39f8bce"
     },
     {
       "path": "software/firmware/README.md",
@@ -199,8 +199,8 @@
     },
     {
       "path": "software/firmware/esp32/arm_hat_controller/arm_hat_controller.ino",
-      "bytes": 757,
-      "sha256": "a36062525369e596aba61a0968ae603d2a3c931924c1a78bb20b6b7797edd684"
+      "bytes": 739,
+      "sha256": "3e3782d201250f4f7ee38fcc57de86b1783b3a441436b2cb780c09587b4d7553"
     },
     {
       "path": "software/firmware/libraries/ArmHatController/library.properties",
@@ -214,18 +214,18 @@
     },
     {
       "path": "software/firmware/libraries/ArmHatController/src/ArmHatController.h",
-      "bytes": 20472,
-      "sha256": "8d4a3904b496e2a7df1f55f1554f3e22ec0adf093d6c9466adb349f3b6b7eb47"
+      "bytes": 20157,
+      "sha256": "be2a413960c2cf29a697a00cf8dd72de7b7e408afb2bbbdbf353b466e35d94c3"
     },
     {
       "path": "software/firmware/libraries/ArmHatController/src/ArmHatProtocol.cpp",
-      "bytes": 29355,
-      "sha256": "313b348fd7f3c640e69cba22892feead3f86fdbdf41b2882048b65ed66e850da"
+      "bytes": 28630,
+      "sha256": "c8b8281a98813f7f06b8c07b45dec4909a3076dbf834807d92a5a2ab265b1f89"
     },
     {
       "path": "software/firmware/libraries/ArmHatController/src/ArmHatProtocol.h",
-      "bytes": 12620,
-      "sha256": "25f770cb2dadce1b813372f965a3f0dcda5b4f14c3fcbe91acb5b0aa16711f1c"
+      "bytes": 12416,
+      "sha256": "91046fcdd4e540c14b71df9d9757aa77ed4e563e3906fdc0f5a3fc420db77309"
     },
     {
       "path": "software/firmware/tests/arduino_stubs/Arduino.h",
@@ -324,8 +324,8 @@
     },
     {
       "path": "software/plugin/.agents/plugins/marketplace.json",
-      "bytes": 389,
-      "sha256": "e1b79047b01c73254ddf234817764249278e3517242778405ca529ed8d11ae0b"
+      "bytes": 369,
+      "sha256": "d890be389ed26bc1556d6a052280101029c0774a4217aa141ab2440cbc6307c0"
     },
     {
       "path": "software/plugin/README.md",
@@ -334,8 +334,8 @@
     },
     {
       "path": "software/plugin/plugins/arm-alliance/.codex-plugin/plugin.json",
-      "bytes": 1001,
-      "sha256": "53f071ca2f8945ebeeab54adc1b7510ef3fef97e3045f06103e4e2a1ab66807d"
+      "bytes": 995,
+      "sha256": "7e09f94f9ad3f2175b86634f114fd2cdad3292ecf058475649b0d2c2397298e0"
     },
     {
       "path": "software/plugin/plugins/arm-alliance/skills/arm-alliance-setup/SKILL.md",
@@ -389,8 +389,8 @@
     },
     {
       "path": "software/python/arm_mcp/tests/test_source_index.py",
-      "bytes": 1929,
-      "sha256": "20b1e649e09ae8f2137cd47b1896f6faaa2c7c238946bf3abe5db7fded092604"
+      "bytes": 2670,
+      "sha256": "848abbbbde52c5e708ecc5735e12538a40fb9642ab11545f7693a649d29d5146"
     },
     {
       "path": "software/python/arm_sim/README.md",
@@ -569,8 +569,8 @@
     },
     {
       "path": "software/python/robot_gateway/arm_controller.py",
-      "bytes": 51071,
-      "sha256": "0f44180ea0ee96052c90fb1034a0825a8d63329e2c7da1e914642a93514a0f7d"
+      "bytes": 50450,
+      "sha256": "cbf1c188cc985edc7df2c4eacf79e204db4e5479116a1c9870c04adcf4756bd5"
     },
     {
       "path": "software/python/robot_gateway/camera_api.py",
@@ -609,13 +609,13 @@
     },
     {
       "path": "software/python/robot_gateway/serial_arm_controller.py",
-      "bytes": 131809,
-      "sha256": "8469c759f15b9c4565e2d78878ded1b54a96c367efb4a67f422f69a97d1a727a"
+      "bytes": 130429,
+      "sha256": "dcbc082722a33c8aafaf19877f3823f449f2c6840a262821610a54e5b52269c3"
     },
     {
       "path": "software/python/robot_gateway/simple_arm_api.py",
-      "bytes": 337060,
-      "sha256": "392f62728b378873e04575642ec849be298a7a4eae4ab89a9b965269695128e0"
+      "bytes": 336181,
+      "sha256": "6d45b1de03de9587bfac94e921e14699cdd48a0fc04e53044f74e2af7abc2bf7"
     },
     {
       "path": "software/python/robot_gateway/strict_contract.py",
@@ -669,8 +669,8 @@
     },
     {
       "path": "software/python/robot_gateway/tests/test_physical_arm_api.py",
-      "bytes": 52350,
-      "sha256": "f1dcf201b8fd209bcc79d143e4ced47a6cda2db472a2378c653e2606493c4812"
+      "bytes": 51164,
+      "sha256": "741848241629493464e5ce4b89073ff686f38a4d66fafd12a99e1963b5f979bd"
     },
     {
       "path": "software/python/robot_gateway/tests/test_pi_camera.py",
@@ -689,13 +689,13 @@
     },
     {
       "path": "software/python/robot_gateway/tests/test_serial_arm_controller.py",
-      "bytes": 141470,
-      "sha256": "e0d74a253b3fef5e3152415595d8eabe7ba90b8191e1fc1dd29e652683393a30"
+      "bytes": 139946,
+      "sha256": "47af2c4fed033bad4482f4e7c2c25e823a6abd6cc885bada4079cc9ddeefee66"
     },
     {
       "path": "software/python/robot_gateway/tests/test_simple_arm_api.py",
-      "bytes": 247880,
-      "sha256": "2d47b45cf6fbd2352f690a0a1729a38c1d4d6de15f0407810899d00b88816aac"
+      "bytes": 246865,
+      "sha256": "bc2a8b3501a4855a48b7516a5446748afed03e612d7805909c950290ed4cb6f3"
     },
     {
       "path": "software/python/tests/installed_wheel_smoke.py",

@@ -59,3 +59,23 @@ def test_source_index_validator_consumes_repository_relative_software_root(
     checker.validate_source_index(failures)
 
     assert failures == ["source index softwareRoot does not resolve to software/"]
+
+
+@pytest.mark.parametrize(("ending", "expected"), [(b"\n", 0), (b"\r\n", 1)])
+def test_release_check_rejects_line_endings_git_would_change(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    ending: bytes,
+    expected: int,
+) -> None:
+    checker = _load_checker()
+    path = tmp_path / "README.md"
+    path.write_bytes(b"# Release fixture" + ending)
+    monkeypatch.setattr(checker, "ROOT", tmp_path)
+    monkeypatch.setattr(checker, "REQUIRED", set())
+    monkeypatch.setattr(checker, "release_files", lambda: [path])
+
+    assert checker.main() == expected
+    output = capsys.readouterr().out
+    assert ("release text must use LF line endings: README.md" in output) is (expected == 1)

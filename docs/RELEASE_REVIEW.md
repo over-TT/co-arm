@@ -22,6 +22,9 @@ formal security certification or a new physical-arm acceptance test.
   identity, and keeps camera evidence bound to the response that produced it.
 - The Python test extra declares NumPy and headless OpenCV for the simulator
   pixel/JPEG policy tests. A fresh environment previously failed collection.
+- The source manifest now matches the LF bytes in a Git archive. The release
+  checker rejects CRLF text so Windows line endings cannot silently make a
+  locally passing manifest fail in a fresh checkout.
 - The [quickstart](QUICKSTART.md) is separate from the full setup runbook.
   Reconnecting an existing arm no longer reads like a full rebuild.
 

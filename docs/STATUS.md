@@ -14,8 +14,8 @@ Base-reference and archive/provenance blockers; see [Release review](RELEASE_REV
 | Area | Included state | Evidence tier |
 | --- | --- | --- |
 | Dashboard | Standalone React/Vite Overview, guarded Control, bounded Live Follow, camera/calibration controls, Guide, Control Center, and SIM/REAL selection | Fresh locked install; 197 tests; 42-module production build; dependency audit; disconnected browser smoke |
-| Local backend | Loopback-only FastAPI runtime, browser session boundary, Control Center, explicit SIM/REAL routing, and response-bound process identity | Source inspection; included in the 767-test Python run and installed-wheel smoke |
-| Pi gateway | Four-joint state/calibration, floor guard, plan/apply/sequence, Live Follow, camera evidence, commissioning, Camera arrival tuning, and process-stable response identity | Source inspection; included in the 767-test Python run; no deployment in this review |
+| Local backend | Loopback-only FastAPI runtime, browser session boundary, Control Center, explicit SIM/REAL routing, and response-bound process identity | Source inspection; included in the 769-test Python run and installed-wheel smoke |
+| Pi gateway | Four-joint state/calibration, floor guard, plan/apply/sequence, Live Follow, camera evidence, commissioning, Camera arrival tuning, and process-stable response identity | Source inspection; included in the 769-test Python run; no deployment in this review |
 | Arm MCP/plugin | Typed Arm tools, explicit SIM/REAL identity verification, structured MCP output, repo-local marketplace, setup skill, and configured-arm runtime skill | MCP/index tests included in the full Python run; plugin/marketplace and both skills validated; no installed configuration changed |
 | Isaac Sim | Four-joint URDF/model, deterministic desk/camera scene, bounded interpolation and frame-quality policy, persistent bridge, simulator HTTP gateway, and supervised launcher | Source/contracts tested; effective square-pixel Camera Module 3 Wide projection is explicit; Isaac runtime and vendor assets are not bundled |
 | Arm HAT | `arm-hat-2.7.2` ESP32 controller source, shared library, and protocol fixtures | 17 host tests passed; device build/flash remains a separate tier |
@@ -28,7 +28,7 @@ dashboard dependencies were installed from the frozen lock in a separate copy
 of the candidate source, without replacing an existing installation:
 
 - gateway, backend, MCP, Isaac contract, deployment/recovery, and source tests:
-  **767 passed, plus 9 nested subtests**; four Starlette deprecation warnings
+  **769 passed, plus 9 nested subtests**; four Starlette deprecation warnings
   remain visible. Pytest also reported a Windows permission warning while
   cleaning an older temporary fixture; it did not fail a test;
 - dashboard: **197 passed**, followed by a successful TypeScript/Vite
@@ -40,6 +40,7 @@ of the candidate source, without replacing an existing installation:
   suites were excluded, proved package imports came from the isolated wheel
   environment, and confirmed that the dashboard CLI exits honestly
   when the separately built frontend assets are absent;
+- all **44 wheel payload files** matched the release source manifest by SHA-256;
 - no-gateway browser smoke: the built Overview and Guide loaded, no backend
   was configured, and Control/Live stayed disabled. A separate loopback test
   server was used; no real-arm service or simulator was started;
@@ -59,6 +60,12 @@ The fresh Python run first failed collection because NumPy/OpenCV were absent
 from the declared test dependencies. The test extra and regenerated lock now
 include them; the complete suite above passed after the correction. This is
 why an earlier already-populated interpreter is not clean-install evidence.
+
+A Git-archive check also exposed 20 stale manifest hashes caused by Windows
+CRLF bytes being converted to LF on commit. Source text was normalized to the
+repository's declared LF format and an LF release gate with two regressions
+was added. The final committed archive must pass the same manifest and
+repository checks as the working tree before publication.
 
 The checked-in GitHub workflow now repeats the source, test, build, package,
 PowerShell, and dependency-audit gates, and Dependabot covers Python, Raspberry

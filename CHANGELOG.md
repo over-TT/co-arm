@@ -4,6 +4,8 @@ All notable public repository changes will be recorded here.
 
 ## Unreleased
 
+- Fixed source-manifest drift between Windows files and committed Git exports,
+  and added an LF line-ending release gate with regressions.
 - Ported Camera arrival/pursuit tuning, strict dashboard target handling,
   process-stable gateway identity, and response-bound camera provenance with
   boundary and restart-race regressions.
