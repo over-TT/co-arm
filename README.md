@@ -10,6 +10,15 @@ desk through its camera. The dashboard, Pi code, ESP32 firmware, simulator,
 Codex tools, and 12 printable parts are here. The last build details and public
 demo media are still coming.
 
+## Start here
+
+- **Try the software:** [open the dashboard without hardware](docs/QUICKSTART.md).
+- **Connect an existing arm:** [check the setup and connect it](docs/SETUP_WITH_CODEX.md#existing-arm-short-path).
+- **Build your own:** start with the [parts and assembly guide](docs/ASSEMBLY.md).
+  The bearing, fastener, print, wiring, and power details still need finishing.
+- **See what is proven:** [status and evidence](docs/STATUS.md),
+  [known limitations](docs/KNOWN_LIMITATIONS.md).
+
 ---
 
 ## Why I built it this way
@@ -106,62 +115,20 @@ an agent or developer looking for a particular piece of source.
 
 ---
 
-## Check it without hardware
+## Run it
 
-Python 3.11 is the tested Python version. The dashboard needs Node 20.19.x or
-22.12+ and the pnpm version in `software/dashboard/package.json`.
+The [quickstart](docs/QUICKSTART.md) gets the dashboard running locally with
+Python, Node, and pnpm. You can explore it before connecting an arm; movement
+and camera controls need a configured gateway.
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install --upgrade pip
-.\.venv\Scripts\python.exe -m pip install --requirement ".\software\python\requirements.lock"
-.\.venv\Scripts\python.exe -m pip install --no-deps --editable ".\software\python"
+For the next step, use the full setup guide:
 
-python tools/build_source_manifest.py --check
-python tools/check_repo.py
+- [Run the source checks](docs/SETUP_WITH_CODEX.md#1-clone-and-validate-without-hardware).
+- [Run the Isaac Sim arm](docs/SETUP_WITH_CODEX.md#3-run-the-isaac-sim-arm).
+- [Connect an existing real arm](docs/SETUP_WITH_CODEX.md#existing-arm-short-path).
 
-Set-Location software\python
-..\..\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider
-..\..\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider ..\firmware\tests\test_arm_hat_controller_v1.py
-
-Set-Location ..\dashboard
-pnpm install --frozen-lockfile
-pnpm test
-pnpm build
-Set-Location ..\..
-```
-
-These checks do not connect to or move a real arm. Isaac Sim and the ESP32
-toolchain are separate installs.
-
----
-
-## Run the dashboard
-
-After installing the Python package and building the dashboard:
-
-```powershell
-.\.venv\Scripts\python.exe -m web_backend
-```
-
-The full dashboard and gateway setup is in
-[`docs/SETUP_WITH_CODEX.md`](docs/SETUP_WITH_CODEX.md).
-
----
-
-## Run the simulator
-
-Point the launcher at your Isaac Sim Python:
-
-```powershell
-$env:PYTHONPATH = (Resolve-Path ".\software\python").Path
-.\.venv\Scripts\python.exe .\software\operations\scripts\run_arm_sim.py --ensure-tokens
-$isaacPython = "<absolute-path-to-isaac-python>"
-.\.venv\Scripts\python.exe .\software\operations\scripts\run_arm_sim.py --isaac-python $isaacPython
-```
-
-Add `--gui` to see the Isaac window. Use `--stop` to stop the local simulator
-stack.
+Isaac Sim and the ESP32 build tools are separate installs. The dashboard does
+not include a fake camera feed or a simulator that runs in the browser.
 
 ---
 

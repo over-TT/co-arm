@@ -38,6 +38,12 @@ idna==3.19
     #   httpx
 iniconfig==2.3.0
     # via pytest
+numpy==2.2.6
+    # via
+    #   co-arm-stack (software/python/pyproject.toml)
+    #   opencv-python-headless
+opencv-python-headless==4.12.0.88
+    # via co-arm-stack (software/python/pyproject.toml)
 packaging==26.3
     # via pytest
 pillow==12.3.0

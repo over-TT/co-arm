@@ -90,6 +90,11 @@ _PROFILE_HASH_PATTERN = r"^sha256:[0-9a-f]{64}$"
 _CAMERA_CONTENT_SHA_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 _CAMERA_SHA_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 _SAFE_FRAME_ID = re.compile(r"^[A-Za-z0-9_-]{1,128}$")
+_BACKEND_INSTANCE_PATTERN = re.compile(r"^[A-Za-z0-9_.:-]{8,256}$")
+_GATEWAY_INSTANCE_PATTERN = re.compile(
+    r"^gateway:[A-Za-z0-9][A-Za-z0-9_.-]{7,247}$"
+)
+_GATEWAY_INSTANCE_HEADER = "x-robot-gateway-instance"
 
 
 class RobotGatewayConfigurationError(ValueError):
@@ -707,6 +712,31 @@ def _camera_autofocus(value: object) -> dict[str, object]:
     return sanitized
 
 
+def _response_provenance(document: dict[str, object]) -> dict[str, object]:
+    """Keep validated identity from this response, never the shared cache."""
+
+    if "backendId" not in document and "backendInstanceId" not in document:
+        return {}
+    backend_id = document.get("backendId")
+    instance_id = document.get("backendInstanceId")
+    simulated = document.get("simulated")
+    if (
+        not isinstance(backend_id, str)
+        or backend_id not in {"sim", "real"}
+        or not isinstance(instance_id, str)
+        or _BACKEND_INSTANCE_PATTERN.fullmatch(instance_id) is None
+        or simulated is not (backend_id == "sim")
+    ):
+        raise RobotGatewayError(
+            "Robot gateway returned invalid process provenance.", status_code=502
+        )
+    return {
+        "backendId": backend_id,
+        "backendInstanceId": instance_id,
+        "simulated": simulated,
+    }
+
+
 def _camera_autofocus_attempt(
     document: dict[str, object], *, expected_simulated: bool = False
 ) -> dict[str, object]:
@@ -737,6 +767,7 @@ def _camera_autofocus_attempt(
     if result == "unavailable" and capability == "unsupported":
         raise RobotGatewayError("Robot gateway returned an invalid response.", status_code=502)
     return {
+        **_response_provenance(document),
         "simulated": expected_simulated,
         "physicalArmMotion": False,
         "attempted": attempted,
@@ -825,6 +856,7 @@ def _camera_status(
         "historyLimit": history_limit,
         "retainedBytes": retained,
         "byteLimit": byte_limit,
+        **_response_provenance(document),
     }
     if "autofocus" in document:
         result["autofocus"] = _camera_autofocus(document.get("autofocus"))
@@ -898,6 +930,7 @@ def _camera_observation(
         "contentSha256": content_digest,
         "stateRevision": _integer(document.get("stateRevision")),
         "frameUrl": f"/api/camera/frames/{frame_id}",
+        **_response_provenance(document),
     }
     if "autofocus" in document:
         result["autofocus"] = _camera_autofocus(document.get("autofocus"))
@@ -948,7 +981,11 @@ def _physical_scan_result(document: dict[str, object]) -> dict[str, object]:
     found = _id_list(document.get("foundIds"))
     if any(item < minimum or item > maximum for item in found):
         raise RobotGatewayError("Robot gateway returned an invalid response.", status_code=502)
-    return {"foundIds": found, "completeRange": {"minId": minimum, "maxId": maximum}}
+    return {
+        "foundIds": found,
+        "completeRange": {"minId": minimum, "maxId": maximum},
+        **_response_provenance(document),
+    }
 
 
 def _physical_position_mode_result(document: dict[str, object]) -> dict[str, object]:
@@ -982,6 +1019,7 @@ def _physical_position_mode_result(document: dict[str, object]) -> dict[str, obj
         "torqueState": "off",
         "minimumPosition": minimum,
         "maximumPosition": maximum,
+        **_response_provenance(document),
     }
 
 
@@ -1001,6 +1039,7 @@ def _physical_capture_result(document: dict[str, object]) -> dict[str, object]:
             document.get("variationTicks", 0), "variationTicks", minimum=0, maximum=4095
         ),
         "evidenceId": evidence_id,
+        **_response_provenance(document),
     }
     if document.get("odometerValid") is True:
         result["odometerValid"] = True
@@ -1030,6 +1069,7 @@ def _physical_odometer_result(document: dict[str, object]) -> dict[str, object]:
         "servoId": _bounded_integer(document.get("servoId"), "servoId", minimum=0, maximum=253),
         "tracking": tracking,
         "valid": valid,
+        **_response_provenance(document),
         "revolutions": _bounded_integer(
             document.get("revolutions"), "revolutions", minimum=-64, maximum=64
         ),
@@ -1092,6 +1132,7 @@ def _physical_nudge_result(
         "measuredDeltaTicks": measured,
         "positionErrorTicks": error,
         "torqueState": "off",
+        **_response_provenance(document),
     }
     evidence_id = document.get("evidenceId")
     if not isinstance(evidence_id, str) or _SAFE_FRAME_ID.fullmatch(evidence_id) is None:
@@ -1273,6 +1314,7 @@ def _physical_status(document: dict[str, object]) -> dict[str, object]:
             "detail": _physical_text(stop_raw.get("detail")),
         },
         "hardwareEstop": hardware_estop,
+        **_response_provenance(document),
     }
 
 
@@ -1306,6 +1348,7 @@ def _physical_profile_response(document: dict[str, object]) -> dict[str, object]
         "profileRevision": revision,
         "profileHash": profile_hash,
         "profile": profile,
+        **_response_provenance(document),
     }
 
 
@@ -1580,6 +1623,7 @@ class RobotGatewayClient:
         self._camera_source = camera_source
         self._camera_identity_confidence = camera_identity_confidence
         self._backend_identity: dict[str, object] | None = None
+        self._gateway_instance_header_negotiated = False
         self._client = httpx.Client(
             base_url=_validated_base_url(base_url),
             headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
@@ -1591,6 +1635,71 @@ class RobotGatewayClient:
 
     def close(self) -> None:
         self._client.close()
+
+    def _gateway_instance_from_headers(self, headers: httpx.Headers) -> str | None:
+        value = headers.get(_GATEWAY_INSTANCE_HEADER)
+        if value is None:
+            if (
+                not self._expected_simulated
+                and self._gateway_instance_header_negotiated
+            ):
+                raise RobotGatewayError(
+                    "Robot gateway omitted negotiated process provenance.",
+                    status_code=502,
+                )
+            return None
+        if _GATEWAY_INSTANCE_PATTERN.fullmatch(value) is None:
+            raise RobotGatewayError(
+                "Robot gateway returned invalid process provenance.",
+                status_code=502,
+            )
+        return value
+
+    def _bind_gateway_response(
+        self,
+        document: dict[str, object],
+        gateway_instance_id: str | None,
+    ) -> dict[str, object]:
+        """Validate and carry REAL Pi process provenance on one JSON reply.
+
+        The same runtime module also hosts the SIM HTTP shim.  SIM remains
+        bound to its stricter Isaac bridge identity from the response body;
+        the Pi-only gateway-process header is authoritative for REAL.
+        """
+
+        if gateway_instance_id is None or self._expected_simulated:
+            return document
+
+        claimed_backend = document.get("backendId")
+        claimed_instance = document.get("backendInstanceId")
+        claimed_simulated = document.get("simulated")
+        if (
+            ("backendId" in document and claimed_backend != "real")
+            or (
+                "backendInstanceId" in document
+                and (
+                    not isinstance(claimed_instance, str)
+                    or _BACKEND_INSTANCE_PATTERN.fullmatch(claimed_instance) is None
+                    or claimed_instance != gateway_instance_id
+                )
+            )
+            or (
+                "simulated" in document and claimed_simulated is not False
+            )
+        ):
+            raise RobotGatewayError(
+                "Robot gateway returned mismatched process provenance.",
+                status_code=502,
+            )
+
+        identity = {
+            "backendId": "real",
+            "backendInstanceId": gateway_instance_id,
+            "simulated": False,
+        }
+        self._backend_identity = identity
+        self._gateway_instance_header_negotiated = True
+        return {**document, **identity}
 
     def backend_identity(self, *, refresh: bool = False) -> dict[str, object] | None:
         """Return a validated upstream process identity without inventing one.
@@ -1611,7 +1720,7 @@ class RobotGatewayClient:
         if (
             backend_id in {"sim", "real"}
             and isinstance(instance_id, str)
-            and re.fullmatch(r"[A-Za-z0-9_.:-]{8,256}", instance_id) is not None
+            and _BACKEND_INSTANCE_PATTERN.fullmatch(instance_id) is not None
             and isinstance(simulated, bool)
             and simulated is self._expected_simulated
             and (backend_id == "sim") is self._expected_simulated
@@ -1667,7 +1776,19 @@ class RobotGatewayClient:
             backend_id = value.get("backendId")
             instance_id = value.get("backendInstanceId")
             simulated = value.get("simulated")
-            if not self._expected_simulated and not isinstance(instance_id, str):
+            if (
+                not self._expected_simulated
+                and isinstance(instance_id, str)
+                and _GATEWAY_INSTANCE_PATTERN.fullmatch(instance_id) is not None
+            ):
+                if backend_id not in {None, "real"}:
+                    raise RobotGatewayError(
+                        "Robot gateway returned mismatched process provenance.",
+                        status_code=502,
+                    )
+                backend_id = "real"
+                simulated = False
+            elif not self._expected_simulated and not isinstance(instance_id, str):
                 controller = value.get("controller")
                 boot_id = controller.get("bootId") if isinstance(controller, dict) else None
                 if (
@@ -1682,7 +1803,7 @@ class RobotGatewayClient:
         if (
             backend_id in {"sim", "real"}
             and isinstance(instance_id, str)
-            and re.fullmatch(r"[A-Za-z0-9_.:-]{8,256}", instance_id) is not None
+            and _BACKEND_INSTANCE_PATTERN.fullmatch(instance_id) is not None
             and isinstance(simulated, bool)
             and simulated is self._expected_simulated
             and (backend_id == "sim") is self._expected_simulated
@@ -1722,6 +1843,7 @@ class RobotGatewayClient:
             if len(content) > MAX_REQUEST_BYTES:
                 raise RobotGatewayError("Robot request is too large.", status_code=413)
             headers = {"Content-Type": "application/json"}
+        gateway_instance_id: str | None = None
         try:
             with self._client.stream(
                 method,
@@ -1730,6 +1852,9 @@ class RobotGatewayClient:
                 headers=headers,
                 timeout=timeout if timeout is not None else self._client.timeout,
             ) as response:
+                gateway_instance_id = self._gateway_instance_from_headers(
+                    response.headers
+                )
                 body = bytearray()
                 for chunk in response.iter_bytes():
                     body.extend(chunk)
@@ -1789,7 +1914,7 @@ class RobotGatewayClient:
             raise RobotGatewayError("Robot gateway returned invalid JSON.", status_code=502) from None
         if not isinstance(document, dict):
             raise RobotGatewayError("Robot gateway returned an invalid response.", status_code=502)
-        return document
+        return self._bind_gateway_response(document, gateway_instance_id)
 
     def camera_status(self) -> dict[str, object]:
         return _camera_status(
@@ -1829,6 +1954,7 @@ class RobotGatewayClient:
         autofocus = status.get("autofocus")
         if isinstance(autofocus, dict) and autofocus.get("capability") == "unsupported":
             return {
+                **_response_provenance(status),
                 "simulated": self._expected_simulated,
                 "physicalArmMotion": False,
                 "attempted": False,
@@ -1873,8 +1999,12 @@ class RobotGatewayClient:
             if transfer
             else f"/api/camera/frames/{identifier}"
         )
+        gateway_instance_id: str | None = None
         try:
             with self._client.stream("GET", path, headers={"Accept": "image/jpeg"}) as response:
+                gateway_instance_id = self._gateway_instance_from_headers(
+                    response.headers
+                )
                 if 300 <= response.status_code < 400:
                     raise RobotGatewayError("Robot gateway redirects are not accepted.", status_code=502)
                 if response.status_code == 404:
@@ -1975,6 +2105,15 @@ class RobotGatewayClient:
             headers["X-Camera-Source"] = camera_source
         if transfer:
             headers["X-One-Use-Transfer"] = "true"
+        if gateway_instance_id is not None and not self._expected_simulated:
+            headers["X-Arm-Backend-Id"] = "real"
+            headers["X-Arm-Backend-Instance"] = gateway_instance_id
+            self._backend_identity = {
+                "backendId": "real",
+                "backendInstanceId": gateway_instance_id,
+                "simulated": False,
+            }
+            self._gateway_instance_header_negotiated = True
         return CameraFrameResponse(
             content=content,
             media_type="image/jpeg",
@@ -2237,6 +2376,7 @@ class RobotGatewayClient:
             raise RobotGatewayError("Robot gateway returned an invalid response.", status_code=502)
         result: dict[str, object] = {
             "proposalId": proposal_id,
+            **_response_provenance(prepared),
             "servoId": _bounded_integer(
                 prepared.get("servoId", request.servoId), "servoId", minimum=0, maximum=253
             ),

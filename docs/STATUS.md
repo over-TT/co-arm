@@ -1,52 +1,64 @@
 # Status and evidence
 
-Last public-source review: **2026-08-28**.
+Last public-source review: **2026-09-04**.
 
 This page reports evidence, not aspiration. Historical hardware statements are
 dated. Nothing in the repository is fresh live state.
+
+Release assessment: a source/reference-build candidate, not a complete
+copy-and-build kit. The exported physical recovery path has unresolved
+Base-reference and archive/provenance blockers; see [Release review](RELEASE_REVIEW.md).
 
 ## Current public source snapshot
 
 | Area | Included state | Evidence tier |
 | --- | --- | --- |
-| Dashboard | Standalone React/Vite Overview, guarded Control, bounded Live Follow, camera/calibration controls, Guide, Control Center, and SIM/REAL selection | Source inspection; unchanged in the 2026-08-28 camera/runtime port; the previous 180 tests, 42-module production build, and high-severity dependency audit passed |
-| Local backend | Loopback-only FastAPI dashboard runtime, browser session boundary, Control Center, camera, and explicit SIM/REAL proxy routing | Source inspection; included in the 725-test Python run |
-| Pi gateway | Bearer authentication, four-joint state/calibration, floor guard, plan/apply/sequence, Live Follow, camera evidence, physical commissioning, and Arm HAT client | Source inspection; included in the 725-test Python run |
-| Arm MCP/plugin | Typed Arm tools, explicit SIM/REAL identity verification, structured MCP output, repo-local Codex marketplace, setup skill, and configured-arm runtime skill | 49 focused MCP/index tests passed; the plugin and both skills validated; credentials and installed MCP configuration are intentionally local |
+| Dashboard | Standalone React/Vite Overview, guarded Control, bounded Live Follow, camera/calibration controls, Guide, Control Center, and SIM/REAL selection | Fresh locked install; 197 tests; 42-module production build; dependency audit; disconnected browser smoke |
+| Local backend | Loopback-only FastAPI runtime, browser session boundary, Control Center, explicit SIM/REAL routing, and response-bound process identity | Source inspection; included in the 767-test Python run and installed-wheel smoke |
+| Pi gateway | Four-joint state/calibration, floor guard, plan/apply/sequence, Live Follow, camera evidence, commissioning, Camera arrival tuning, and process-stable response identity | Source inspection; included in the 767-test Python run; no deployment in this review |
+| Arm MCP/plugin | Typed Arm tools, explicit SIM/REAL identity verification, structured MCP output, repo-local marketplace, setup skill, and configured-arm runtime skill | MCP/index tests included in the full Python run; plugin/marketplace and both skills validated; no installed configuration changed |
 | Isaac Sim | Four-joint URDF/model, deterministic desk/camera scene, bounded interpolation and frame-quality policy, persistent bridge, simulator HTTP gateway, and supervised launcher | Source/contracts tested; effective square-pixel Camera Module 3 Wide projection is explicit; Isaac runtime and vendor assets are not bundled |
 | Arm HAT | `arm-hat-2.7.2` ESP32 controller source, shared library, and protocol fixtures | 17 host tests passed; device build/flash remains a separate tier |
-| Operations | Pi service templates, deployment, reversible physical-UART mode control, status, backup/restore/imaging, firmware compile helper, and Isaac launcher | Source/contracts tested; six retained PowerShell scripts parsed |
+| Operations | Pi service templates, deployment, physical-UART mode control, status, backup/restore/imaging, firmware compile helper, and Isaac launcher | Six scripts parsed; source/contracts tested; portable backup/restore has unresolved release blockers |
 | Printable parts | All 12 current printed parts: both Base gears, the Base stack, arm links, servo mounts/covers, and camera holder/cover | Files inspected; final print settings are not included |
 
-Current camera/runtime export verification completed on 2026-08-28. Dashboard,
-packaging, PowerShell, and dependency files were unchanged; their prior
-2026-08-26 evidence remains listed separately below:
+Current candidate verification completed on 2026-09-04 using Windows, Python
+3.11.9, Node 24.14.1, and pnpm 11.19.0. Python used a new virtual environment;
+dashboard dependencies were installed from the frozen lock in a separate copy
+of the candidate source, without replacing an existing installation:
 
 - gateway, backend, MCP, Isaac contract, deployment/recovery, and source tests:
-  **725 passed**; four upstream Starlette
-  deprecation warnings remain visible;
-- unchanged dashboard evidence from 2026-08-26: **180 passed**, followed by a successful TypeScript/Vite
-  production build with 42 modules transformed;
+  **767 passed, plus 9 nested subtests**; four Starlette deprecation warnings
+  remain visible. Pytest also reported a Windows permission warning while
+  cleaning an older temporary fixture; it did not fail a test;
+- dashboard: **197 passed**, followed by a successful TypeScript/Vite
+  production build with 42 modules transformed. jsdom reported its known
+  missing-canvas implementation during an accessibility test;
 - an isolated PEP 517 build produced and cleanly installed the
   `co_arm_stack-0.1.0-py3-none-any.whl` artifact; `pip check` and a
   source-isolated smoke loaded the packaged simulator URDF/JSON, confirmed test
-  suites were excluded, and confirmed that the dashboard CLI exits honestly
+  suites were excluded, proved package imports came from the isolated wheel
+  environment, and confirmed that the dashboard CLI exits honestly
   when the separately built frontend assets are absent;
-- no-gateway dashboard smoke: HTML plus both generated assets returned 200,
-  the browser session issued a bounded action token, zero arm backends were
-  configured, and the fixed Control Center manifest loaded;
+- no-gateway browser smoke: the built Overview and Guide loaded, no backend
+  was configured, and Control/Live stayed disabled. A separate loopback test
+  server was used; no real-arm service or simulator was started;
 - Arm HAT host/protocol suite: **17 passed**;
 - all **6** retained PowerShell operations scripts parsed without syntax
   errors;
 - the `co-arm` plugin manifest and marketplace validated, and both setup and
   runtime skills passed their skill validators;
-- the exact Python lock, Raspberry Pi requirements, and complete dashboard
-  dependency graph returned no known vulnerabilities from their current audit
-  services;
-- the source manifest is current across **153 software files**, and the
-  repository checker reviewed **227 files** with only the documented missing
+- the exact Python lock, Raspberry Pi requirements, and dashboard dependency
+  graph returned no known vulnerabilities from their audit services;
+- the source manifest is current across **155 software files**, and the
+  repository checker reviewed **232 files** with only the documented missing
   license and approved-media warnings. The earlier missing-CAD warning is gone
-  because all 12 current 3MF files are now included.
+  because all 12 current 3MF files are included.
+
+The fresh Python run first failed collection because NumPy/OpenCV were absent
+from the declared test dependencies. The test extra and regenerated lock now
+include them; the complete suite above passed after the correction. This is
+why an earlier already-populated interpreter is not clean-install evidence.
 
 The checked-in GitHub workflow now repeats the source, test, build, package,
 PowerShell, and dependency-audit gates, and Dependabot covers Python, Raspberry
@@ -66,8 +78,10 @@ repo-local setup skill give an agent an ordered path through checkout validation
 dashboard startup, Isaac setup, blank-Pi prerequisites, gateway deployment,
 firmware compilation, tunnel/MCP configuration, commissioning, and operation.
 
-That path is complete for source validation and is actionable for a supplied
-Isaac installation or an existing physical arm. A reproducible new mechanical
+That path covers source validation and connection to an existing commissioned
+arm. A supplied Isaac installation still needs its own runtime verification.
+The portable physical recovery branch is incomplete and must not be treated
+as ready for an SD-card loss. A reproducible new mechanical
 build is now partly documented by all 12 printable parts. It still needs the
 bearing details, full fastener and print schedule, as-built wiring/pinout, and
 power details before it becomes a complete copy-and-build package.

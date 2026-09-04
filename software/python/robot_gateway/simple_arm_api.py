@@ -486,6 +486,24 @@ MOVE_YIELD_SECONDS = 0.05
 # separates the two without re-driving a joint that is simply where it was asked
 # to be.
 ARRIVAL_DEGREES = 1.0
+# The lower-resolution SC09 camera joint can settle several encoder counts
+# away from its requested raw goal while already reporting stationary.  The
+# loaded Module 3 Wide mount was measured settling 16 counts / 5.625 degrees
+# short after all bounded chase attempts. Six degrees rounds to a 17-count
+# Camera-only arrival/chase tolerance. Joints 1-3, and the separate capture
+# drift guard, remain on ARRIVAL_DEGREES.
+CAMERA_ARRIVAL_DEGREES = 6.0
+
+
+def _arrival_tolerance_degrees(joint_name: str) -> float:
+    return CAMERA_ARRIVAL_DEGREES if joint_name == "joint_4" else ARRIVAL_DEGREES
+
+
+def _arrival_tolerance_ticks(joint_name: str, ticks_per_degree: float) -> int:
+    tolerance_degrees = _arrival_tolerance_degrees(joint_name)
+    return max(1, round(tolerance_degrees * ticks_per_degree))
+
+
 # How many times a goal is re-sent before the Pi accepts the joint is not going
 # to get there. Bounded because a joint stalled on something solid must not be
 # driven at it forever.
@@ -4260,6 +4278,7 @@ class ArmService:
 
         reported = self._controller.transport_state()
         snapshot = self.state()
+        tolerance_evidence = self._arrival_tolerance_evidence(moved)
         with self._lock:
             current_generation = self._telemetry_generation
         if current_generation != generation:
@@ -4271,6 +4290,7 @@ class ArmService:
             "generation": generation,
             "observedMonotonic": observed_at,
             "state": snapshot,
+            **tolerance_evidence,
         }
         if self._boot_id_of(reported) != expected_boot_id:
             detail["reason"] = "controller_boot_changed"
@@ -4363,7 +4383,12 @@ class ArmService:
                 detail["reason"] = f"{name}_measurement_missing"
                 return False, None, detail
             joint = self._store.get(str(name))
-            threshold = max(1, round(ARRIVAL_DEGREES * joint.ticks_per_degree))
+            tolerance_by_joint = tolerance_evidence["toleranceByJoint"]
+            assert isinstance(tolerance_by_joint, dict)
+            tolerance = tolerance_by_joint.get(str(name))
+            assert isinstance(tolerance, dict)
+            threshold = tolerance["ticks"]
+            assert isinstance(threshold, int)
             measured_raw[str(name)] = raw
             measured_pose[str(name)] = round(float(degrees), 6)
             target_degrees = command.get("degrees")
@@ -4395,6 +4420,43 @@ class ArmService:
         )
         return True, None, detail
 
+    def _arrival_tolerance_evidence(
+        self, moved: list[dict[str, object]]
+    ) -> dict[str, object]:
+        """Describe the exact per-joint thresholds used by arrival and chase."""
+
+        tolerance_by_joint: dict[str, dict[str, float | int]] = {}
+        for command in moved:
+            name = command.get("joint")
+            if name not in JOINT_IDS:
+                continue
+            joint_name = str(name)
+            joint = self._store.get(joint_name)
+            tolerance_by_joint[joint_name] = {
+                "degrees": _arrival_tolerance_degrees(joint_name),
+                "ticks": _arrival_tolerance_ticks(
+                    joint_name, joint.ticks_per_degree
+                ),
+            }
+        distinct_degrees = {
+            float(tolerance["degrees"])
+            for tolerance in tolerance_by_joint.values()
+        }
+        # Preserve the legacy scalar when every commanded joint uses one value.
+        # A mixed Camera/arm move is explicitly per-joint instead of presenting
+        # either tolerance as if it applied to the whole move.
+        tolerance_degrees: float | None = (
+            next(iter(distinct_degrees))
+            if len(distinct_degrees) == 1
+            else ARRIVAL_DEGREES
+            if not distinct_degrees
+            else None
+        )
+        return {
+            "toleranceDegrees": tolerance_degrees,
+            "toleranceByJoint": tolerance_by_joint,
+        }
+
     def _wait_for_arrival(
         self,
         *,
@@ -4409,6 +4471,7 @@ class ArmService:
     ) -> tuple[str, dict[str, object], dict[str, object] | None]:
         started = time.monotonic()
         deadline = started + timeout_seconds
+        tolerance_evidence = self._arrival_tolerance_evidence(moved)
         last_generation = after_generation
         stable: list[tuple[float, dict[str, object]]] = []
         latest: dict[str, object] | None = None
@@ -4424,7 +4487,7 @@ class ArmService:
                     {
                         "proved": False,
                         "elapsedMs": int((time.monotonic() - started) * 1000),
-                        "toleranceDegrees": ARRIVAL_DEGREES,
+                        **tolerance_evidence,
                         "sampleCount": len(stable),
                         "samples": len(stable),
                         "reason": "operator_stop",
@@ -4435,7 +4498,7 @@ class ArmService:
                 arrival = {
                     "proved": False,
                     "elapsedMs": int((time.monotonic() - started) * 1000),
-                    "toleranceDegrees": ARRIVAL_DEGREES,
+                    **tolerance_evidence,
                     "sampleCount": len(stable),
                     "samples": len(stable),
                     "reason": "arrival_timeout",
@@ -4462,7 +4525,7 @@ class ArmService:
                 arrival = {
                     "proved": False,
                     "elapsedMs": int((time.monotonic() - started) * 1000),
-                    "toleranceDegrees": ARRIVAL_DEGREES,
+                    **tolerance_evidence,
                     "sampleCount": len(stable),
                     "samples": len(stable),
                     "reason": sample.get("reason"),
@@ -4481,7 +4544,7 @@ class ArmService:
             arrival = {
                 "proved": True,
                 "elapsedMs": int((time.monotonic() - started) * 1000),
-                "toleranceDegrees": ARRIVAL_DEGREES,
+                **tolerance_evidence,
                 "stableForMs": int(span * 1000),
                 "spanMs": int(span * 1000),
                 "sampleCount": len(stable),
@@ -6739,7 +6802,9 @@ class ArmService:
                 raw = counted if joint.multiTurn else servo.get("rawPosition")
                 if not isinstance(raw, int) or isinstance(raw, bool):
                     continue
-                if abs(raw - goal) <= max(1, round(ARRIVAL_DEGREES * joint.ticks_per_degree)):
+                if abs(raw - goal) <= _arrival_tolerance_ticks(
+                    name, joint.ticks_per_degree
+                ):
                     finished.append(name)
                     continue
                 if servo.get("moving"):

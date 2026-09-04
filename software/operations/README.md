@@ -43,7 +43,8 @@ loopback port; it rejects URL suffixes and bypasses redirects and proxies.
 - `scripts/arm_status.py` separates gateway, controller, bus, STOP, and joint
   state. Use the default read-only form before considering `--scan`.
 - `scripts/restore-arm-pi.ps1`, `scripts/backup-arm-pi.ps1`, and
-  `scripts/image-arm-pi-sd.ps1` implement the bounded Pi recovery path.
+  `scripts/image-arm-pi-sd.ps1` contain the Pi recovery tooling. Portable
+  recovery is incomplete; see the release blocker below.
 - `scripts/compile-firmware.ps1` builds only the ESP32 Arm HAT source and never
   flashes it.
 
@@ -65,3 +66,24 @@ service/network/boot evidence, optional Base and recovery markers, credentials,
 and media binding under ignored `software/runtime/robot-gateway/pi-backups/`.
 It is private recovery state for that Pi, not a template for another person's
 credentials, Base frame, network, or host identity.
+
+## Recovery release blocker
+
+Do not use the exported `restore-arm-pi.ps1` for physical recovery until the
+scripts and gateway are fixed together and a full backup-to-restore round trip
+passes. A valid archive checksum proves saved bytes, not a restorable kit.
+
+- Fresh deployment does not create the recovery manifest/provenance files
+  required by `backup-arm-pi.ps1`.
+- Normal calibration updates `arm-joints.json` but can leave its recovery
+  provenance hash stale. Restore requires separate token, calibration, and
+  provenance inputs and rejects that mismatch; it has no archive import path.
+- Restored Base calibration needs an enforced invalid-reference gate until
+  physical re-zeroing. The gateway can currently pair an old restored zero with
+  a surviving valid HAT frame. Its generic STOP latch can be cleared without
+  establishing that new reference. A cold HAT continuity loss still blocks Base.
+
+The snapshot requirement above remains in force. Do not fabricate provenance
+or clear STOP to bypass these gaps. Keep existing protected archives and consult
+the [release review](../../docs/RELEASE_REVIEW.md) for the coordinated fix and
+verification work still required.

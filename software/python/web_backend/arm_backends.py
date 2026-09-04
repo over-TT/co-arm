@@ -331,6 +331,22 @@ class BoundRobotGatewayClient:
     def _instance_id(self, *, refresh: bool = False) -> str | None:
         return self._registry._instance_id(self._descriptor, refresh=refresh)
 
+    def _require_operation_response_instance(
+        self, value: object, expected_instance_id: str
+    ) -> str:
+        observed_instance_id = self._registry._instance_id_from_response(
+            self._descriptor, value
+        )
+        if (
+            observed_instance_id is not None
+            and observed_instance_id != expected_instance_id
+        ):
+            raise RobotGatewayError(
+                "The Arm backend process changed while the request was in flight. Preview it again.",
+                status_code=409,
+            )
+        return observed_instance_id or expected_instance_id
+
     def _decorate(self, value: object, *, instance_id: str | None = None) -> object:
         resolved_instance = instance_id if instance_id is not None else self._instance_id()
         if isinstance(value, dict):
@@ -364,6 +380,9 @@ class BoundRobotGatewayClient:
                 "The Arm backend did not provide a process identity.", status_code=502
             )
         result = self._client.arm_plan_preview(request)
+        instance_id = self._require_operation_response_instance(
+            result, instance_id
+        )
         identifier = result.get("planId")
         digest = result.get("planDigest", result.get("digest"))
         if not isinstance(identifier, str) or not isinstance(digest, str):
@@ -397,6 +416,9 @@ class BoundRobotGatewayClient:
             instance_id=instance_id,
         )
         result = self._client.arm_plan_execute(request)
+        instance_id = self._require_operation_response_instance(
+            result, instance_id
+        )
         self._registry.consume_reviewed_artifact(
             kind="plan",
             identifier=request.planId,
@@ -415,6 +437,9 @@ class BoundRobotGatewayClient:
                 "The Arm backend did not provide a process identity.", status_code=502
             )
         result = self._client.arm_sequence_preview(request)
+        instance_id = self._require_operation_response_instance(
+            result, instance_id
+        )
         identifier = result.get("sequenceId")
         digest = result.get("sequenceDigest")
         if not isinstance(identifier, str) or not isinstance(digest, str):
@@ -456,6 +481,9 @@ class BoundRobotGatewayClient:
             else self._client.arm_sequence_execute
         )
         result = method(request)
+        instance_id = self._require_operation_response_instance(
+            result, instance_id
+        )
         self._registry.consume_reviewed_artifact(
             kind="sequence",
             identifier=request.sequenceId,

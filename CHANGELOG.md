@@ -4,6 +4,15 @@ All notable public repository changes will be recorded here.
 
 ## Unreleased
 
+- Ported Camera arrival/pursuit tuning, strict dashboard target handling,
+  process-stable gateway identity, and response-bound camera provenance with
+  boundary and restart-race regressions.
+- Added the missing NumPy/headless OpenCV test dependencies so a fresh Python
+  environment can collect the simulator camera-policy tests.
+- Added a short no-hardware quickstart, existing-arm setup routing, a dated
+  release review, and draft release/X copy.
+- Documented unresolved portable recovery blockers: Base-reference invalidation,
+  stale calibration provenance, and missing fresh-install recovery metadata.
 - Rewrote the README around the physical build and why it exists, using the
   same direct voice as Rock and DOT instead of leading with software policy.
 - Added all 12 current 3MF parts: both printed Base gears, bearing-bottom piece,

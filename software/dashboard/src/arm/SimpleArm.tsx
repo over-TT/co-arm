@@ -31,6 +31,13 @@ import "./simple-arm.css";
 
 const POLL_MS = 150;
 const IDLE_POLLS_BEFORE_RETIRING_MISSED_GOAL = 6;
+// SC09 Camera telemetry can remain stationary/idle while the servo is still
+// converging or being chased for the Pi's eight-second arrival window. Use a
+// wall-clock bound so background-tab timer throttling cannot extend the lock;
+// successful arrival still retires immediately on the first in-tolerance poll.
+const CAMERA_MISSED_GOAL_GRACE_MS = 9_000;
+const ARM_ARRIVAL_TOLERANCE_DEGREES = 1;
+const CAMERA_ARRIVAL_TOLERANCE_DEGREES = 6;
 const BASE_TEST_ANGLES = [-120, -30, 0, 30, 120] as const;
 
 type BaseAction = {
@@ -46,7 +53,11 @@ type SequencePhase = "idle" | "draft" | "planning" | "ready" | "applying" | "com
 type SequenceDraft = { id: number; targets: Partial<Record<SimpleJointId, number>> };
 type PreparedSingleMotion =
   | { kind: "plan"; value: SimpleArmPlan }
-  | { kind: "floor-route"; value: SimpleArmSequencePlan };
+  | {
+      kind: "floor-route";
+      value: SimpleArmSequencePlan;
+      resolvedPose: Partial<Record<SimpleJointId, number>>;
+    };
 type CameraBusyState = "status" | "capture-survey" | "capture-detail" | "autofocus" | null;
 
 const FLOOR_SWEEP_REFUSAL = "The independently timed Shoulder/Elbow sweep crosses the floor keep-out plane. Choose another pose.";
@@ -221,10 +232,62 @@ function servoPoseOf(state: SimpleArmState | null) {
   }, {});
 }
 
+function finiteJointTargets(...sources: unknown[]): Partial<Record<SimpleJointId, number>> {
+  const targets: Partial<Record<SimpleJointId, number>> = {};
+  for (const source of sources) {
+    if (!source || typeof source !== "object") continue;
+    const values = source as Partial<Record<SimpleJointId, unknown>>;
+    for (const id of ALL_JOINTS) {
+      const value = values[id];
+      if (typeof value === "number" && Number.isFinite(value)) targets[id] = value;
+    }
+  }
+  return targets;
+}
+
+/**
+ * Resolve the exact targets displayed to the operator without allowing an
+ * authoritative planner response to erase a requested joint. Older/current Pi
+ * builds may explicitly return null for an unrequested trusted Base; that is
+ * not a target. The same malformed value for a joint that was requested is a
+ * fail-closed planner error, while an omitted key keeps the requested value for
+ * compatibility with partial planner poses.
+ */
+function resolvedJointTargets(
+  requested: Partial<Record<SimpleJointId, number>>,
+  authoritative: unknown,
+): Partial<Record<SimpleJointId, number>> {
+  const resolved = finiteJointTargets(requested);
+  if (!authoritative || typeof authoritative !== "object") return resolved;
+
+  const values = authoritative as Partial<Record<SimpleJointId, unknown>>;
+  for (const id of ALL_JOINTS) {
+    if (!Object.prototype.hasOwnProperty.call(values, id)) continue;
+    const value = values[id];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      resolved[id] = value;
+      continue;
+    }
+    if (typeof requested[id] === "number" && Number.isFinite(requested[id])) {
+      throw new Error(`The arm planner returned an invalid ${id} target. The move was not armed.`);
+    }
+    delete resolved[id];
+  }
+  return resolved;
+}
+
 function backendInstanceOf(value: unknown): string | null {
   if (!value || typeof value !== "object") return null;
   const instanceId = (value as Record<string, unknown>).backendInstanceId;
   return typeof instanceId === "string" && instanceId ? instanceId : null;
+}
+
+function targetReached(jointId: string, measured: number | null | undefined, target: number) {
+  if (typeof measured !== "number" || !Number.isFinite(measured)) return false;
+  const tolerance = jointId === "joint_4"
+    ? CAMERA_ARRIVAL_TOLERANCE_DEGREES
+    : ARM_ARRIVAL_TOLERANCE_DEGREES;
+  return Math.abs(measured - target) < tolerance;
 }
 
 function motionEvidenceOf(state: SimpleArmState): "moving" | "idle" | "unknown" {
@@ -704,6 +767,7 @@ export function SimpleArm({
   const executionBackendInstanceRef = useRef<string | null>(null);
   const executionObservedMotionRef = useRef(false);
   const executionIdlePollsRef = useRef(0);
+  const executionAcceptedAtRef = useRef<number | null>(null);
   const manualDispatchPendingRef = useRef(false);
 
   const retireManualExecution = useCallback((detail?: string) => {
@@ -711,6 +775,7 @@ export function SimpleArm({
     executionBackendInstanceRef.current = null;
     executionObservedMotionRef.current = false;
     executionIdlePollsRef.current = 0;
+    executionAcceptedAtRef.current = null;
     manualDispatchPendingRef.current = false;
     setManualMotionInFlight(false);
     setPlanPhase((current) => (
@@ -730,6 +795,7 @@ export function SimpleArm({
   const cameraApi = useMemo(() => createCameraApi(request, actionToken), [actionToken, request]);
   const preparedPlan = preparedSingle?.kind === "plan" ? preparedSingle.value : null;
   const preparedFloorRoute = preparedSingle?.kind === "floor-route" ? preparedSingle.value : null;
+  const preparedFloorRouteResolvedPose = preparedSingle?.kind === "floor-route" ? preparedSingle.resolvedPose : null;
   const joints = byId(state);
   const measured = poseOf(state);
   const draft = useMemo(() => draftOf(state), [state]);
@@ -879,7 +945,7 @@ export function SimpleArm({
         const executionFinished = Object.entries(executingTargets).length > 0 &&
           Object.entries(executingTargets).every(([id, target]) => {
             const joint = next.joints.find((candidate) => candidate.id === id);
-            return typeof target === "number" && typeof joint?.degrees === "number" && Math.abs(joint.degrees - target) < 1;
+            return typeof target === "number" && targetReached(id, joint?.degrees, target);
           });
         const executionInstanceChanged = Boolean(
           executionBackendInstanceRef.current
@@ -905,8 +971,11 @@ export function SimpleArm({
           && !manualDispatchPendingRef.current
           && !applyInFlightRef.current
           && (
-            executionObservedMotionRef.current
-            || executionIdlePollsRef.current >= IDLE_POLLS_BEFORE_RETIRING_MISSED_GOAL
+            typeof executingTargets.joint_4 === "number"
+              ? executionAcceptedAtRef.current !== null
+                && Date.now() - executionAcceptedAtRef.current >= CAMERA_MISSED_GOAL_GRACE_MS
+              : executionObservedMotionRef.current
+                || executionIdlePollsRef.current >= IDLE_POLLS_BEFORE_RETIRING_MISSED_GOAL
           );
         if (executionFinished) {
           retireManualExecution();
@@ -932,7 +1001,7 @@ export function SimpleArm({
             if (typeof executing !== "number") continue;
             // A servo parks a few tenths off its goal, so exact equality would
             // never retire. Widen if the arm settles sloppier than this.
-            const arrived = typeof joint.degrees === "number" && Math.abs(joint.degrees - wanted) < 1;
+            const arrived = targetReached(joint.id, joint.degrees, wanted);
             if (arrived) kept[joint.id] = undefined;
           }
           return kept;
@@ -1069,7 +1138,7 @@ export function SimpleArm({
       try {
         const plan = await api.previewPlan(targets);
         if (planRequestRef.current !== requestId) return;
-        const resolved = { ...targets, ...plan.resolvedPose };
+        const resolved = resolvedJointTargets(targets, plan.resolvedPose);
         draftRef.current = resolved;
         setCommanded(resolved);
         setPreparedSingle({ kind: "plan", value: { ...plan, resolvedPose: resolved } });
@@ -1089,10 +1158,10 @@ export function SimpleArm({
             }
             const final = route.waypoints.at(-1)?.resolvedPose;
             if (!final) throw new Error("The arm planner returned a route without a destination. The move was not armed.");
-            const resolved = { ...targets, ...final };
+            const resolved = resolvedJointTargets(targets, final);
             draftRef.current = resolved;
             setCommanded(resolved);
-            setPreparedSingle({ kind: "floor-route", value: route });
+            setPreparedSingle({ kind: "floor-route", value: route, resolvedPose: resolved });
             setPlanPhase("ready");
             setMessage(null);
             return;
@@ -1143,7 +1212,7 @@ export function SimpleArm({
       if (prepared.kind === "plan") {
         const result = await api.executePlan(prepared.value);
         executionInstance = backendInstanceOf(result) ?? executionInstance;
-        resolved = { ...prepared.value.resolvedPose, ...(result.resolvedPose ?? {}) };
+        resolved = finiteJointTargets(prepared.value.resolvedPose, result.resolvedPose);
       } else {
         const result = await api.executeSequence(prepared.value);
         executionInstance = backendInstanceOf(result) ?? executionInstance;
@@ -1151,16 +1220,17 @@ export function SimpleArm({
           const failed = result.failedWaypointIndex === null ? "" : ` Failed at leg ${result.failedWaypointIndex + 1}.`;
           throw new Error(`Floor-safe route ${result.outcome} after ${result.completedWaypointCount} of ${result.waypointCount} legs.${failed}`);
         }
-        resolved = {
-          ...(prepared.value.waypoints.at(-1)?.resolvedPose ?? {}),
-          ...(result.resolvedPose ?? {}),
-          ...(result.finalMeasuredPose ?? {}),
-        };
+        resolved = finiteJointTargets(
+          prepared.resolvedPose,
+          result.resolvedPose,
+          result.finalMeasuredPose,
+        );
       }
       executingRef.current = resolved;
       executionBackendInstanceRef.current = executionInstance;
       executionObservedMotionRef.current = false;
       executionIdlePollsRef.current = 0;
+      executionAcceptedAtRef.current = Date.now();
       setManualMotionInFlight(Object.keys(resolved).length > 0);
       setCommanded(resolved);
       setMessage(null);
@@ -1635,7 +1705,7 @@ export function SimpleArm({
   const planVisible = planPhase !== "idle";
   const plannedTip = forwardKinematics(previewPose, DEFAULT_GEOMETRY);
   const measuredTip = forwardKinematics(measured, DEFAULT_GEOMETRY);
-  const preparedSingleResolvedPose = preparedPlan?.resolvedPose ?? preparedFloorRoute?.waypoints.at(-1)?.resolvedPose ?? {};
+  const preparedSingleResolvedPose = preparedPlan?.resolvedPose ?? preparedFloorRouteResolvedPose ?? {};
   const preparedSingleWarnings = preparedPlan?.warnings ?? preparedFloorRoute?.warnings ?? [];
   const preparedSingleClearance = preparedPlan?.lowestClearanceMm ?? preparedFloorRoute?.lowestClearanceMm ?? null;
   const preparedSingleExpiresInMs = preparedPlan?.expiresInMs ?? preparedFloorRoute?.expiresInMs ?? null;

@@ -3,6 +3,9 @@
 This guide takes the repo from a clean checkout to source checks, the dashboard,
 Isaac Sim, or a real Raspberry Pi arm.
 
+To open the dashboard first, use the shorter [quickstart](QUICKSTART.md).
+Return here for validation, simulation, Pi setup, or the Codex connection.
+
 All 12 current printed parts are included. The bearing details, screw/insert
 list, print settings, wiring drawing, and power details are still being added.
 
@@ -16,10 +19,25 @@ list, print settings, wiring drawing, and power details are still being added.
 - **Simulation:** complete source setup, then follow section 3 and configure
   MCP with `ARM_EXPECTED_BACKEND=sim`.
 - **Existing configured arm:** validate source first, inventory the live build,
-  then follow sections 4 through 10 with `ARM_EXPECTED_BACKEND=real`.
+  then use the [existing-arm short path](#existing-arm-short-path) with
+  `ARM_EXPECTED_BACKEND=real`.
 - **New physical build:** use the 3MF parts and assembly map, then fill in the
   bearing, fastener, print, wiring, and power details that are still marked
   TODO.
+
+### Existing-arm short path
+
+For an already commissioned arm, start with section 1's source checks and
+section 8's tunnel, read-only status, and dashboard connection. Check that the
+installed source, hardware, calibration, and camera match the build you intend
+to use. Section 5 helps diagnose a connection or device fault. Section 9 adds
+the optional Codex connection.
+
+Sections 4, 6, 7, and 10 cover physical inventory, firmware, deployment, and
+commissioning. Revisit the relevant stage when that part of the installation
+has changed or lacks evidence; reconnecting a working arm does not by itself
+require reflashing it or repeating all calibration. A lost Base reference still
+requires physical alignment with its zero mark and **Set zero here**.
 
 ## What you provide
 
@@ -83,8 +101,8 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --requirement ".\software\python\requirements.lock"
 .\.venv\Scripts\python.exe -m pip install --no-deps --editable ".\software\python"
 
-python tools\build_source_manifest.py --check
-python tools\check_repo.py
+.\.venv\Scripts\python.exe tools\build_source_manifest.py --check
+.\.venv\Scripts\python.exe tools\check_repo.py
 
 Set-Location software\python
 ..\..\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider
@@ -121,6 +139,9 @@ simulated arm-control routes remain unavailable. The Control Center may still
 list its fixed local setup/check actions, such as starting Isaac or running
 source tests, when their required local tools are present. This proves the UI
 shell and local setup surface, not an arm connection.
+
+Keep that terminal running; **Ctrl+C** stops the dashboard. If the port is
+already in use, add `--port 8766` and open `http://127.0.0.1:8766/` instead.
 
 The dashboard contains arm controls only. The supported agent integration is
 the repository instructions plus the external MCP plugin; no embedded Codex
@@ -421,11 +442,17 @@ After deployment, verify separately:
 
 ### 7.1 Keep every Pi mutation recoverable
 
+**Release blocker:** the exported backup/restore path is incomplete and has
+not passed a full round-trip recovery test. Do not use `restore-arm-pi.ps1`
+for physical recovery until the scripts and gateway are fixed together and
+that test passes. The [release review](RELEASE_REVIEW.md) records the findings.
+
 The checkout is the reusable source of truth. Do not edit an ordinary gateway
 module only on the Pi. Before a reachable persistent Pi change, take a protected
 snapshot when useful prior state exists; after a successful deployment,
 calibration, Base-reference, service/UART/boot, or network change, always take
-and verify a new one:
+and verify a new one. A failed required snapshot leaves the change incomplete.
+The current backup command is:
 
 ```powershell
 $piBackup = @{
@@ -453,6 +480,21 @@ optional USB-media evidence. Archives live under the ignored, owner-only
 identity and must only rebuild that same Pi. Another person's Pi starts from
 the reviewed source and creates its own credentials, commissioning evidence,
 and protected snapshot history.
+
+A passing archive/hash check proves the saved bytes, not a restorable kit:
+
+- A fresh deployment lacks the recovery manifest and calibration provenance
+  that the backup script requires.
+- Calibration changes can leave the saved provenance hash stale. Restore
+  accepts separate token/calibration/provenance files, not the backup archive,
+  and rejects that mismatched pair.
+- Restore must invalidate the saved Base reference until explicit physical
+  re-zeroing. The export does not enforce this when an already-valid HAT frame
+  survives recovery; clearing the generic STOP latch is insufficient.
+
+Do not fabricate provenance or clear STOP to work around these gaps. Keep
+existing protected archives; the fix needs a tested conversion from snapshot
+to restore inputs and a separate, enforced Base-reference gate.
 
 ## 8. Connect the laptop to REAL
 

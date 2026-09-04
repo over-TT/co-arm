@@ -2,12 +2,21 @@
 
 ## Start here
 
-- [Set up co-arm with Codex](SETUP_WITH_CODEX.md)
+- [Quickstart: open the dashboard without hardware](QUICKSTART.md)
+- [Connect an existing arm](SETUP_WITH_CODEX.md#existing-arm-short-path)
+- [Full setup runbook, with or without Codex](SETUP_WITH_CODEX.md)
 - [Status and evidence](STATUS.md)
 - [Open questions](OPEN_QUESTIONS.md)
 - [Known limitations](KNOWN_LIMITATIONS.md)
 - [Release checklist](RELEASE_CHECKLIST.md)
+- [Release review and remaining blockers](RELEASE_REVIEW.md)
+- [Release notes and X draft](LAUNCH_DRAFT.md)
 - [Owner handoff](OWNER_HANDOFF.md)
+
+For a new physical build, start with [Assembly](ASSEMBLY.md), the
+[hardware inventory](HARDWARE.md), and [Commissioning](COMMISSIONING.md).
+The printable parts are included; the remaining build gaps are listed in
+[Known limitations](KNOWN_LIMITATIONS.md).
 
 ## Build and hardware
 

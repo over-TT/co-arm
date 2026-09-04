@@ -84,6 +84,23 @@ class ResponseIdentityGateway(FakeGateway):
         }
 
 
+class MismatchedOperationIdentityGateway(FakeGateway):
+    def backend_identity(self, *, refresh: bool = False) -> dict[str, object]:
+        return {
+            "backendId": "real",
+            "backendInstanceId": "gateway:process-before",
+            "simulated": False,
+        }
+
+    def arm_plan_preview(self, _request: object) -> dict[str, object]:
+        return {
+            **super().arm_plan_preview(_request),
+            "backendId": "real",
+            "backendInstanceId": "gateway:process-after",
+            "simulated": False,
+        }
+
+
 def descriptor(backend_id: str, gateway: FakeGateway) -> ArmBackendDescriptor:
     return ArmBackendDescriptor.create(  # type: ignore[arg-type]
         backend_id, backend_id.upper(), gateway, instance_id=f"{backend_id}-instance"  # type: ignore[arg-type]
@@ -200,6 +217,23 @@ def test_upstream_instance_restart_invalidates_a_reviewed_sim_plan() -> None:
     assert registry.public_backends()["backends"][0]["backendInstanceId"] == (
         "sim_bridge_instance_two"
     )
+
+
+def test_real_plan_preview_rejects_an_in_flight_gateway_identity_change() -> None:
+    gateway = MismatchedOperationIdentityGateway("real")
+    registry = ArmBackendRegistry(
+        [
+            ArmBackendDescriptor.create(  # type: ignore[arg-type]
+                "real", "REAL", gateway  # type: ignore[arg-type]
+            )
+        ],
+        default_backend_id="real",
+    )
+
+    with pytest.raises(RobotGatewayError, match="changed while") as changed:
+        registry.bound_client("real").arm_plan_preview(preview_request())
+
+    assert changed.value.status_code == 409
 
 
 def test_evidence_refreshes_upstream_identity_after_restart() -> None:

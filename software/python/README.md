@@ -20,6 +20,11 @@ Set-Location software\python
 Set-Location ..\..
 ```
 
+The lock includes the test extra: pytest, NumPy, and headless OpenCV. The
+simulator's camera-policy tests exercise real pixel arrays and a JPEG round
+trip without launching Isaac. These host-test dependencies are not added to
+the Pi requirements and do not replace Isaac's own Python environment.
+
 Build the frontend in `../dashboard`, then start the local UI with no live
 backend:
 

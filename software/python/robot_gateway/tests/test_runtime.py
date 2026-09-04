@@ -40,6 +40,33 @@ def test_health_is_unauthenticated_and_contains_no_secret(client: TestClient) ->
     assert all(TOKEN not in value for value in response.headers.values())
 
 
+def test_every_response_carries_the_same_gateway_process_identity(
+    client: TestClient,
+) -> None:
+    health = client.get("/healthz")
+    instance = health.json()["backendInstanceId"]
+    assert health.headers[runtime.GATEWAY_INSTANCE_HEADER] == instance
+    for path, headers, status_code in (
+        ("/api/robot/arm/state", {"Authorization": f"Bearer {TOKEN}"}, 200),
+        ("/api/robot/physical/arm/status", {"Authorization": f"Bearer {TOKEN}"}, 200),
+        ("/api/robot/arm/state", {}, 401),
+        ("/missing-route", {}, 404),
+    ):
+        response = client.get(path, headers=headers)
+        assert response.status_code == status_code
+        assert response.headers[runtime.GATEWAY_INSTANCE_HEADER] == instance
+
+
+def test_new_gateway_application_gets_a_distinct_process_identity(
+    token_file: Path,
+) -> None:
+    with TestClient(runtime.create_app(token_file=token_file)) as first:
+        first_instance = first.get("/healthz").json()["backendInstanceId"]
+    with TestClient(runtime.create_app(token_file=token_file)) as second:
+        second_instance = second.get("/healthz").json()["backendInstanceId"]
+    assert first_instance != second_instance
+
+
 @pytest.mark.parametrize(
     "headers",
     [

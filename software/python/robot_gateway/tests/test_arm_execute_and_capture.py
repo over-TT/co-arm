@@ -99,6 +99,36 @@ class NeverSettlesController(ReplayArmController):
         return result
 
 
+class StationaryGoalOffsetController(ReplayArmController):
+    """Leave selected servos stationary at a repeatable raw-goal offset."""
+
+    stationary_offsets: dict[int, int]
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.stationary_offsets = {}
+
+    def _apply_stationary_offsets(self, moves) -> None:
+        for servo_id, goal, *_ in moves:
+            offset = self.stationary_offsets.get(servo_id)
+            if offset is None:
+                continue
+            self._servos[servo_id]["rawPosition"] = goal + offset
+            self._servos[servo_id]["moving"] = False
+
+    def move(
+        self, servo_id: int, goal: int, speed: int, acceleration: int
+    ) -> dict[str, object]:
+        result = super().move(servo_id, goal, speed, acceleration)
+        self._apply_stationary_offsets([(servo_id, goal, speed, acceleration)])
+        return result
+
+    def move_set(self, moves):
+        result = super().move_set(moves)
+        self._apply_stationary_offsets(moves)
+        return result
+
+
 class SlowOdometerController(ReplayArmController):
     """Model firmware 2.4's guarded STATUS -> ODO_READ -> STATUS latency."""
 
@@ -365,6 +395,166 @@ def test_execute_and_capture_proves_arrival_and_returns_the_exact_bound_frame(
         assert frame.status_code == 200
         assert frame.content == jpeg
         assert client.get(result["capture"]["transferUrl"], headers=AUTH).status_code == 404
+
+
+@pytest.mark.parametrize("camera_offset_ticks", [-17, -16, 16, 17])
+def test_stationary_camera_arrival_accepts_boundary_tick_error_without_chase(
+    tmp_path: Path,
+    camera_offset_ticks: int,
+) -> None:
+    controller = _controller(StationaryGoalOffsetController)
+    assert isinstance(controller, StationaryGoalOffsetController)
+    controller.stationary_offsets[4] = camera_offset_ticks
+    provider = FakeProvider(_frame(b"\xff\xd8camera-within-arrival-tolerance\xff\xd9"))
+
+    with _client(tmp_path, controller, provider) as client:
+        plan = _calibrate_and_plan(client, {"joint_4": 5.0})
+        controller.commands.clear()
+        response = client.post(
+            "/api/robot/arm/plans/execute-and-capture",
+            headers=AUTH,
+            json={**plan, "arrivalTimeoutMs": 2500},
+        )
+
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["outcome"] == "captured"
+    assert result["arrival"]["proved"] is True
+    assert result["arrival"]["samples"] >= 3
+    assert result["arrival"]["spanMs"] >= 250
+    assert result["arrival"]["toleranceDegrees"] == 6.0
+    assert result["arrival"]["toleranceByJoint"] == {
+        "joint_4": {"degrees": 6.0, "ticks": 17}
+    }
+    assert provider.capture_calls == 1
+    assert len(
+        [
+            command
+            for command in controller.commands
+            if command["operation"] == "MOVE" and command.get("servoId") == 4
+        ]
+    ) == 1
+    assert not [
+        command
+        for command in controller.commands
+        if command["operation"] == "MOVE_SET"
+    ]
+
+
+@pytest.mark.parametrize("camera_offset_ticks", [-18, 18])
+def test_stationary_camera_arrival_rejects_eighteen_tick_error(
+    tmp_path: Path,
+    camera_offset_ticks: int,
+) -> None:
+    controller = _controller(StationaryGoalOffsetController)
+    assert isinstance(controller, StationaryGoalOffsetController)
+    controller.stationary_offsets[4] = camera_offset_ticks
+    provider = FakeProvider(_frame(b"\xff\xd8must-not-capture-camera-outside-tolerance\xff\xd9"))
+
+    with _client(tmp_path, controller, provider) as client:
+        plan = _calibrate_and_plan(client, {"joint_4": 5.0})
+        response = client.post(
+            "/api/robot/arm/plans/execute-and-capture",
+            headers=AUTH,
+            json={**plan, "arrivalTimeoutMs": 500},
+        )
+
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["outcome"] == "arrival_timeout"
+    assert result["arrival"]["proved"] is False
+    assert result["arrival"]["toleranceDegrees"] == 6.0
+    assert result["arrival"]["toleranceByJoint"] == {
+        "joint_4": {"degrees": 6.0, "ticks": 17}
+    }
+    assert result["arrival"]["lastSampleReason"] == (
+        "joint_4_still_moving_or_outside_tolerance"
+    )
+    assert provider.capture_calls == 0
+
+
+def test_stationary_arm_joint_rejects_camera_equivalent_angular_error(
+    tmp_path: Path,
+) -> None:
+    controller = _controller(StationaryGoalOffsetController)
+    assert isinstance(controller, StationaryGoalOffsetController)
+    # Ten SC09 ticks are 3.515625 degrees. The same angle is 40 STS ticks,
+    # which must remain outside the one-degree arm-joint tolerance.
+    controller.stationary_offsets[2] = 40
+    provider = FakeProvider(_frame(b"\xff\xd8must-not-capture-arm-outside-tolerance\xff\xd9"))
+
+    with _client(tmp_path, controller, provider) as client:
+        plan = _calibrate_and_plan(client, {"joint_2": 5.0})
+        response = client.post(
+            "/api/robot/arm/plans/execute-and-capture",
+            headers=AUTH,
+            json={**plan, "arrivalTimeoutMs": 500},
+        )
+
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["outcome"] == "arrival_timeout"
+    assert result["arrival"]["proved"] is False
+    assert result["arrival"]["toleranceDegrees"] == 1.0
+    assert result["arrival"]["toleranceByJoint"] == {
+        "joint_2": {"degrees": 1.0, "ticks": 11}
+    }
+    assert result["arrival"]["lastSampleReason"] == (
+        "joint_2_still_moving_or_outside_tolerance"
+    )
+    assert provider.capture_calls == 0
+
+
+@pytest.mark.parametrize("joint_name", ["joint_1", "joint_2", "joint_3"])
+def test_arm_joint_arrival_receipt_reports_one_degree_tolerance(
+    tmp_path: Path,
+    joint_name: str,
+) -> None:
+    controller = _controller()
+    provider = FakeProvider(_frame(b"\xff\xd8arm-joint-tolerance-receipt\xff\xd9"))
+
+    with _client(tmp_path, controller, provider) as client:
+        plan = _calibrate_and_plan(client, {joint_name: 5.0})
+        response = client.post(
+            "/api/robot/arm/plans/execute-and-capture",
+            headers=AUTH,
+            json={**plan, "arrivalTimeoutMs": 2500},
+        )
+
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["outcome"] == "captured"
+    assert result["arrival"]["toleranceDegrees"] == 1.0
+    assert result["arrival"]["toleranceByJoint"] == {
+        joint_name: {"degrees": 1.0, "ticks": 11}
+    }
+
+
+def test_mixed_arm_and_camera_arrival_receipt_is_explicitly_per_joint(
+    tmp_path: Path,
+) -> None:
+    controller = _controller()
+    provider = FakeProvider(_frame(b"\xff\xd8mixed-tolerance-receipt\xff\xd9"))
+
+    with _client(tmp_path, controller, provider) as client:
+        plan = _calibrate_and_plan(
+            client,
+            {"joint_2": 5.0, "joint_4": 5.0},
+        )
+        response = client.post(
+            "/api/robot/arm/plans/execute-and-capture",
+            headers=AUTH,
+            json={**plan, "arrivalTimeoutMs": 2500},
+        )
+
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["outcome"] == "captured"
+    assert result["arrival"]["toleranceDegrees"] is None
+    assert result["arrival"]["toleranceByJoint"] == {
+        "joint_2": {"degrees": 1.0, "ticks": 11},
+        "joint_4": {"degrees": 6.0, "ticks": 17},
+    }
 
 
 def test_composed_plan_and_sequence_forward_the_requested_capture_profile(
@@ -1000,6 +1190,35 @@ def test_slow_uncommanded_camera_motion_during_shutter_invalidates_the_frame(
     assert result["arrival"]["proved"] is True
     assert result["capture"] is None
     assert status["latestFrameId"] is None
+
+
+def test_camera_arrival_slack_does_not_relax_capture_drift_guard(
+    tmp_path: Path,
+) -> None:
+    controller = _controller()
+
+    def drift_camera_ten_ticks() -> None:
+        controller._servos[4]["rawPosition"] += 10
+        controller._servos[4]["moving"] = False
+
+    provider = FakeProvider(
+        _frame(b"\xff\xd8camera-drift-still-invalidates-frame\xff\xd9"),
+        on_capture=drift_camera_ten_ticks,
+    )
+    with _client(tmp_path, controller, provider) as client:
+        plan = _calibrate_and_plan(client)
+        response = client.post(
+            "/api/robot/arm/plans/execute-and-capture",
+            headers=AUTH,
+            json={**plan, "arrivalTimeoutMs": 2500},
+        )
+
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["arrival"]["proved"] is True
+    assert result["outcome"] == "capture_invalidated"
+    assert result["capture"] is None
+    assert provider.capture_calls == 1
 
 
 def test_cached_capture_downgrades_after_its_one_use_transfer_is_consumed(

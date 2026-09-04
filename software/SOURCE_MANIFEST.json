@@ -84,13 +84,13 @@
     },
     {
       "path": "software/dashboard/src/arm/SimpleArm.test.tsx",
-      "bytes": 98480,
-      "sha256": "1ac8fd1e608164f3ba50e1b956fd3114d2b8a713350eaeab96992f7d898a237e"
+      "bytes": 114525,
+      "sha256": "ee2edf244e0f575b7b1028857b8ba29f2d63c5e56eb0d12d0c7415d4ac74e17d"
     },
     {
       "path": "software/dashboard/src/arm/SimpleArm.tsx",
-      "bytes": 106035,
-      "sha256": "dead7781dbf9ca1ed93e26b597bc761c3a518fc066f1ed761c7c17e8f8747605"
+      "bytes": 109093,
+      "sha256": "b640584a69ebb5b9faf1c826528b8658801532b748c8c2d4056f5430ff12a0f9"
     },
     {
       "path": "software/dashboard/src/arm/arm-2d.css",
@@ -259,8 +259,8 @@
     },
     {
       "path": "software/operations/README.md",
-      "bytes": 3695,
-      "sha256": "e98386c3e9df5d247fd376589287d07ff2888f7076f232744f9d33e1ff7d0c1e"
+      "bytes": 4937,
+      "sha256": "272723f308bdd06aa94c906a7eeacfbef55dba6f0b9e737c588a2595446389a0"
     },
     {
       "path": "software/operations/deploy/arm-gateway-physical-uart.conf",
@@ -349,8 +349,8 @@
     },
     {
       "path": "software/python/README.md",
-      "bytes": 1685,
-      "sha256": "5367a880be8743e22d736ef34d0c908e3b9ba6fb4db23f84114b9fbd79f3577b"
+      "bytes": 1983,
+      "sha256": "9d73b17a757e033281142fc8a097efa171c1f5dac8ad1c4b3bff533e09b77849"
     },
     {
       "path": "software/python/arm_mcp/README.md",
@@ -544,13 +544,13 @@
     },
     {
       "path": "software/python/pyproject.toml",
-      "bytes": 992,
-      "sha256": "37747b88019462622472c0f9ae6fd37046f859697b24c5a2a9778cf872550e8b"
+      "bytes": 1054,
+      "sha256": "b744309d8919ac588437ee5dd0e6641dd352ede7ed20f65ac0477cd6ad4dbfe7"
     },
     {
       "path": "software/python/requirements.lock",
-      "bytes": 1691,
-      "sha256": "d25377ac3fe73fa268e0c43adf684922fdc9fbad99ef81a327731af4e8ce1ea1"
+      "bytes": 1889,
+      "sha256": "70d1190254c0a88f135bfba71c0837f3b7c37276305bae21999359fdcc3aa434"
     },
     {
       "path": "software/python/robot_gateway/README.md",
@@ -604,8 +604,8 @@
     },
     {
       "path": "software/python/robot_gateway/runtime.py",
-      "bytes": 12925,
-      "sha256": "f8ef0bc1ac815b6f96d2c12193701943a4580f9343268339f9b2affe0ab5003b"
+      "bytes": 13511,
+      "sha256": "86d34e1386f69f97b268d0f75aaaf4878416a1c07dd758aaef2a02e632c710da"
     },
     {
       "path": "software/python/robot_gateway/serial_arm_controller.py",
@@ -614,8 +614,8 @@
     },
     {
       "path": "software/python/robot_gateway/simple_arm_api.py",
-      "bytes": 334428,
-      "sha256": "337530a56c49041225e8f45e5cdd52d57d9044a7425127b1bae0baf017ace650"
+      "bytes": 337060,
+      "sha256": "392f62728b378873e04575642ec849be298a7a4eae4ab89a9b965269695128e0"
     },
     {
       "path": "software/python/robot_gateway/strict_contract.py",
@@ -629,8 +629,8 @@
     },
     {
       "path": "software/python/robot_gateway/tests/test_arm_execute_and_capture.py",
-      "bytes": 50418,
-      "sha256": "a4bbfd409dd22a9441e8835f8fe3ed504476e6e84763dda6f0ae30d92abd1261"
+      "bytes": 58420,
+      "sha256": "b6d779e357c1a41fb1047e29cdd1b2b8a07340e6a2b3197a13514b9177dc4d18"
     },
     {
       "path": "software/python/robot_gateway/tests/test_arm_gateway_mode_script.py",
@@ -684,8 +684,8 @@
     },
     {
       "path": "software/python/robot_gateway/tests/test_runtime.py",
-      "bytes": 9143,
-      "sha256": "4fbba347dab055b64f34ddf5c2765415cd6e759fa10c3fc7647b7d64e3a695ee"
+      "bytes": 10322,
+      "sha256": "f4846535426feb93d4f04b8ac92b578275747e459b383e3195d154cd311510e8"
     },
     {
       "path": "software/python/robot_gateway/tests/test_serial_arm_controller.py",
@@ -699,8 +699,8 @@
     },
     {
       "path": "software/python/tests/installed_wheel_smoke.py",
-      "bytes": 2080,
-      "sha256": "c4003b2c053fef2c91f69a8758ae1eec6d2c758b5c30d5c89a448eb26c04dcd3"
+      "bytes": 2442,
+      "sha256": "7008e7808c22aaf37051493ca07328fde664cb57ae05f4fa39e8ed7296fddb17"
     },
     {
       "path": "software/python/web_backend/__init__.py",
@@ -719,8 +719,8 @@
     },
     {
       "path": "software/python/web_backend/arm_backends.py",
-      "bytes": 18519,
-      "sha256": "c53d398d15b6912e0d710122e6fbfbd2124975294616f37d1d1eb876e0575e57"
+      "bytes": 19559,
+      "sha256": "28cb94b2a992cac8a0f62d80b4316d378c964ad2dfe7072bebaf79b2861ecd0f"
     },
     {
       "path": "software/python/web_backend/arm_control_center.py",
@@ -734,8 +734,8 @@
     },
     {
       "path": "software/python/web_backend/robot_gateway_client.py",
-      "bytes": 97434,
-      "sha256": "216511af9e7ef37bbb122b318719b7c39c3357d6be294cdff6a2e4256ffe0c95"
+      "bytes": 102933,
+      "sha256": "d0f8dd394a8f075f06f36c6b595b0fb30b801d5894691720c7603f963381deb7"
     },
     {
       "path": "software/python/web_backend/runtime.py",
@@ -749,8 +749,8 @@
     },
     {
       "path": "software/python/web_backend/tests/test_arm_backends.py",
-      "bytes": 8942,
-      "sha256": "43c50ec20d30efbe9e3144d2a9272dd38f3151f362f399009cd188d12a7ec084"
+      "bytes": 10084,
+      "sha256": "1e63792c12179ee14db0cbfc8710c71a3c58a90be97406f3a53eac3e22f337d5"
     },
     {
       "path": "software/python/web_backend/tests/test_arm_control_center.py",
@@ -761,6 +761,16 @@
       "path": "software/python/web_backend/tests/test_build_identity.py",
       "bytes": 1630,
       "sha256": "e120024befb8525562cdc957340aa92e4a5bc4f0268490f809b43d4149cc41a7"
+    },
+    {
+      "path": "software/python/web_backend/tests/test_gateway_identity.py",
+      "bytes": 13449,
+      "sha256": "7677e24792ebcf6cc09b63e41c0e486fcc7c34787b1539c519aca8543a9c21b4"
+    },
+    {
+      "path": "software/python/web_backend/tests/test_response_provenance.py",
+      "bytes": 5801,
+      "sha256": "43637073a5caa228b634444d8cbcd30995ff11aa0ae3896acf8ac0abefbabfd4"
     },
     {
       "path": "software/python/web_backend/tests/test_standalone_app.py",

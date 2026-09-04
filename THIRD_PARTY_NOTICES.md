@@ -8,7 +8,7 @@ factory-firmware backups are not redistributed.
 
 The standalone Python package declares FastAPI, HTTPX, Pillow, Pydantic,
 pyserial, Starlette, and Uvicorn at runtime; setuptools and wheel build it, and
-pytest runs its tests. Direct constraints are recorded in
+pytest, NumPy, and headless OpenCV run its host tests. Direct constraints are recorded in
 `software/python/pyproject.toml`, while `software/python/requirements.lock`
 records the exact Python 3.11 runtime/test graph used by source validation.
 The Raspberry Pi deployment set is pinned separately in

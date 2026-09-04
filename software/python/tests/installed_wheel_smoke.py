@@ -12,6 +12,7 @@ from importlib.resources import files
 from importlib.util import find_spec
 import json
 from pathlib import Path
+import sys
 import tempfile
 import xml.etree.ElementTree as ET
 
@@ -21,6 +22,13 @@ from web_backend.runtime import main as dashboard_main
 
 def main() -> int:
     assert version("co-arm-stack") == "0.1.0"
+
+    for package in ("arm_mcp", "arm_sim", "robot_gateway", "web_backend"):
+        spec = find_spec(package)
+        assert spec is not None and spec.origin is not None
+        assert Path(spec.origin).resolve().is_relative_to(Path(sys.prefix).resolve()), (
+            f"{package} was imported from outside the isolated wheel environment"
+        )
 
     package_root = files("arm_sim")
     model_resource = package_root.joinpath("config", "arm_model.json")

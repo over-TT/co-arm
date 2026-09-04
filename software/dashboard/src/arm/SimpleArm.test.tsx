@@ -66,7 +66,7 @@ function harness(overrides: {
   baseMaxDegrees?: number;
   stopped?: boolean;
   planWarnings?: string[];
-  planResolvedPose?: Record<string, number>;
+  planResolvedPose?: Record<string, unknown>;
   planPreviewFailure?: { status: number; detail: string };
   sequencePreviewResponse?: (body: { waypoints: Array<{ targets: Record<string, number>; label?: string }> }, attempt: number) => Response | Promise<Response>;
   sequenceOutcome?: string;
@@ -1233,10 +1233,278 @@ describe("SimpleArm", () => {
     fireEvent.pointerUp(base);
     await screen.findByText("Plan ready. Review the dashed pose, then apply it.");
     await user.click(screen.getByRole("button", { name: "Apply move" }));
-    await waitFor(() => expect(onControlBusyChange).toHaveBeenLastCalledWith(true));
+    await waitFor(() => expect(onControlBusyChange).toHaveBeenCalledWith(true));
 
     expect(await screen.findByRole("alert", {}, { timeout: 2_500 })).toHaveTextContent(/backend restarted/i);
     await waitFor(() => expect(onControlBusyChange).toHaveBeenLastCalledWith(false));
+  });
+
+  it("does not report a restart for a normal REAL move on one stable backend instance", async () => {
+    const user = userEvent.setup();
+    const { request: normal } = harness({ planResolvedPose: { joint_1: 30 } });
+    let executed = false;
+    let postExecutePolls = 0;
+    const request = vi.fn<typeof fetch>(async (input, init) => {
+      const url = String(input);
+      if (url === "/api/arm/simple/state") {
+        const response = await normal(input, init);
+        const body = await response.json();
+        if (executed) postExecutePolls += 1;
+        const arrived = executed && postExecutePolls >= 2;
+        return jsonResponse({
+          ...body,
+          backendInstanceId: "real-instance-stable",
+          moving: executed && !arrived,
+          joints: body.joints.map((candidate: { id: string }) => (
+            candidate.id === "joint_1" && executed
+              ? { ...candidate, degrees: arrived ? 30 : 26 }
+              : candidate
+          )),
+        });
+      }
+      if (init?.method === "POST" && url.endsWith("/plans/execute")) {
+        const response = await normal(input, init);
+        const body = await response.json();
+        executed = true;
+        return jsonResponse({ ...body, backendInstanceId: "real-instance-stable" });
+      }
+      return normal(input, init);
+    });
+    const onControlBusyChange = vi.fn();
+    render(<SimpleArm request={request} onControlBusyChange={onControlBusyChange} />);
+    await screen.findByText("Base");
+
+    const base = screen.getByRole("slider", { name: "Drive Base" });
+    fireEvent.change(base, { target: { value: "30" } });
+    fireEvent.pointerUp(base);
+    await screen.findByText("Plan ready. Review the dashed pose, then apply it.");
+    await user.click(screen.getByRole("button", { name: "Apply move" }));
+    await waitFor(() => expect(onControlBusyChange).toHaveBeenLastCalledWith(true));
+
+    await waitFor(() => expect(postExecutePolls).toBeGreaterThanOrEqual(2));
+    await waitFor(() => expect(onControlBusyChange).toHaveBeenLastCalledWith(false));
+    expect(screen.queryByText("The arm backend restarted before that target was verified. Prepare a fresh move.")).not.toBeInTheDocument();
+  });
+
+  it("keeps a quiet Camera target active until it settles inside its six-degree tolerance", async () => {
+    const user = userEvent.setup();
+    const { request: normal } = harness({
+      // The physical Base preview can be intentionally null while its
+      // multi-turn position remains trusted. A non-numeric preview entry must
+      // never become an execution target that blocks Camera retirement.
+      planResolvedPose: { joint_1: null, joint_4: 40 },
+    });
+    let executed = false;
+    let postExecutePolls = 0;
+    let cameraArrived = false;
+    const request = vi.fn<typeof fetch>(async (input, init) => {
+      const url = String(input);
+      if (url === "/api/arm/simple/state") {
+        const response = await normal(input, init);
+        const body = await response.json();
+        if (executed) postExecutePolls += 1;
+        return jsonResponse({
+          ...body,
+          backendInstanceId: "real-camera-instance-stable",
+          // Another joint may briefly provide aggregate moving evidence. That
+          // must not bypass the Camera-specific quiet pursuit window.
+          moving: executed && postExecutePolls === 1,
+          joints: body.joints.map((candidate: { id: string }) => (
+            candidate.id === "joint_4" && executed
+              ? { ...candidate, degrees: cameraArrived ? 34.4 : 30, moving: false }
+              : candidate
+          )),
+        });
+      }
+      if (init?.method === "POST" && url.endsWith("/plans/execute")) {
+        const response = await normal(input, init);
+        const body = await response.json();
+        executed = true;
+        return jsonResponse({ ...body, backendInstanceId: "real-camera-instance-stable" });
+      }
+      return normal(input, init);
+    });
+    const onControlBusyChange = vi.fn();
+    render(<SimpleArm request={request} onControlBusyChange={onControlBusyChange} />);
+    await screen.findByText("Base");
+
+    const camera = screen.getByRole("slider", { name: "Drive Camera" });
+    fireEvent.change(camera, { target: { value: "40" } });
+    fireEvent.pointerUp(camera);
+    await screen.findByText("Plan ready. Review the dashed pose, then apply it.");
+    await user.click(screen.getByRole("button", { name: "Apply move" }));
+
+    await waitFor(() => expect(onControlBusyChange).toHaveBeenCalledWith(true));
+    await waitFor(() => expect(postExecutePolls).toBeGreaterThanOrEqual(8), { timeout: 3_000 });
+    expect(onControlBusyChange).toHaveBeenLastCalledWith(true);
+    expect(screen.queryByText(/target was not reached/i)).not.toBeInTheDocument();
+    cameraArrived = true;
+    await waitFor(() => expect(onControlBusyChange).toHaveBeenLastCalledWith(false));
+    expect(screen.queryByText("The controller reports no active motion, but the target was not reached. Prepare a fresh move.")).not.toBeInTheDocument();
+  });
+
+  it("does not declare a quiet Camera miss before the Pi pursuit window expires", async () => {
+    vi.useFakeTimers();
+    const { request: normal } = harness({ planResolvedPose: { joint_1: null, joint_4: 40 } });
+    let executed = false;
+    const request = vi.fn<typeof fetch>(async (input, init) => {
+      const url = String(input);
+      if (url === "/api/arm/simple/state") {
+        const response = await normal(input, init);
+        const body = await response.json();
+        return jsonResponse({
+          ...body,
+          backendInstanceId: "real-camera-grace-stable",
+          moving: false,
+          joints: body.joints.map((candidate: { id: string }) => (
+            candidate.id === "joint_4" && executed
+              ? { ...candidate, degrees: 30, moving: false }
+              : candidate
+          )),
+        });
+      }
+      if (init?.method === "POST" && url.endsWith("/plans/execute")) {
+        const response = await normal(input, init);
+        const body = await response.json();
+        executed = true;
+        return jsonResponse({ ...body, backendInstanceId: "real-camera-grace-stable" });
+      }
+      return normal(input, init);
+    });
+    const onControlBusyChange = vi.fn();
+    const view = render(<SimpleArm request={request} onControlBusyChange={onControlBusyChange} />);
+    try {
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      const camera = screen.getByRole("slider", { name: "Drive Camera" });
+      fireEvent.change(camera, { target: { value: "40" } });
+      fireEvent.pointerUp(camera);
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      expect(screen.getByText("Plan ready. Review the dashed pose, then apply it.")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "Apply move" }));
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      expect(onControlBusyChange).toHaveBeenLastCalledWith(true);
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(8_999); });
+      expect(onControlBusyChange).toHaveBeenLastCalledWith(true);
+      expect(screen.queryByText(/target was not reached/i)).not.toBeInTheDocument();
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+      expect(screen.getByRole("alert")).toHaveTextContent(/target was not reached/i);
+      expect(onControlBusyChange).toHaveBeenLastCalledWith(false);
+    } finally {
+      view.unmount();
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([
+    { camera: 34, shoulder: 30, arrived: false },
+    { camera: 34.001, shoulder: 30, arrived: true },
+    { camera: 45.999, shoulder: 30, arrived: true },
+    { camera: 46, shoulder: 30, arrived: false },
+    { camera: 34.4, shoulder: 29, arrived: false },
+    { camera: 34.4, shoulder: 29.001, arrived: true },
+  ])("checks each mixed target with its own arrival tolerance: $camera / $shoulder", async ({ camera, shoulder, arrived }) => {
+    vi.useFakeTimers();
+    const { request: normal } = harness({ planResolvedPose: { joint_1: null, joint_2: 30, joint_4: 40 } });
+    let executed = false;
+    const request = vi.fn<typeof fetch>(async (input, init) => {
+      const response = await normal(input, init);
+      if (String(input) === "/api/arm/simple/state") {
+        const body = await response.json();
+        return jsonResponse({
+          ...body,
+          moving: false,
+          joints: body.joints.map((candidate: { id: string }) => {
+            if (!executed) return candidate;
+            if (candidate.id === "joint_2") return { ...candidate, degrees: shoulder, moving: false };
+            if (candidate.id === "joint_4") return { ...candidate, degrees: camera, moving: false };
+            return candidate;
+          }),
+        });
+      }
+      if (String(input).endsWith("/plans/execute")) executed = true;
+      return response;
+    });
+    const onControlBusyChange = vi.fn();
+    const view = render(<SimpleArm request={request} onControlBusyChange={onControlBusyChange} />);
+    try {
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      const cameraSlider = screen.getByRole("slider", { name: "Drive Camera" });
+      fireEvent.change(cameraSlider, { target: { value: "40" } });
+      fireEvent.change(screen.getByRole("slider", { name: "Drive Shoulder" }), { target: { value: "30" } });
+      fireEvent.pointerUp(cameraSlider);
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      fireEvent.click(screen.getByRole("button", { name: "Apply move" }));
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      expect(onControlBusyChange).toHaveBeenLastCalledWith(true);
+      await act(async () => { await vi.advanceTimersByTimeAsync(150); });
+      expect(onControlBusyChange).toHaveBeenLastCalledWith(!arrived);
+      expect(screen.queryByText(/target was not reached/i)).not.toBeInTheDocument();
+    } finally {
+      view.unmount();
+      vi.useRealTimers();
+    }
+  });
+
+  it("retires a Camera move immediately on a real gateway restart during pursuit", async () => {
+    vi.useFakeTimers();
+    const { request: normal } = harness({ planResolvedPose: { joint_1: null, joint_4: 40 } });
+    let executed = false;
+    const request = vi.fn<typeof fetch>(async (input, init) => {
+      const response = await normal(input, init);
+      const url = String(input);
+      if (url === "/api/arm/simple/state") {
+        const body = await response.json();
+        return jsonResponse({
+          ...body,
+          backendInstanceId: executed ? "gateway:new-process" : "gateway:old-process",
+          moving: false,
+        });
+      }
+      if (url.endsWith("/plans/execute")) {
+        const body = await response.json();
+        executed = true;
+        return jsonResponse({ ...body, backendInstanceId: "gateway:old-process" });
+      }
+      return response;
+    });
+    const onControlBusyChange = vi.fn();
+    const view = render(<SimpleArm request={request} onControlBusyChange={onControlBusyChange} />);
+    try {
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      const camera = screen.getByRole("slider", { name: "Drive Camera" });
+      fireEvent.change(camera, { target: { value: "40" } });
+      fireEvent.pointerUp(camera);
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      fireEvent.click(screen.getByRole("button", { name: "Apply move" }));
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      expect(onControlBusyChange).toHaveBeenLastCalledWith(true);
+      await act(async () => { await vi.advanceTimersByTimeAsync(150); });
+      expect(screen.getByRole("alert")).toHaveTextContent(/backend restarted/i);
+      expect(onControlBusyChange).toHaveBeenLastCalledWith(false);
+    } finally {
+      view.unmount();
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([null, false, "40", Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    "refuses an explicitly invalid requested Camera target: %s", async (value) => {
+    const { request, calls } = harness({ planResolvedPose: { joint_4: value } });
+    render(<SimpleArm request={request} />);
+    await screen.findByText("Base");
+
+    const camera = screen.getByRole("slider", { name: "Drive Camera" });
+    fireEvent.change(camera, { target: { value: "40" } });
+    fireEvent.pointerUp(camera);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "The arm planner returned an invalid joint_4 target. The move was not armed.",
+    );
+    expect(screen.getByRole("button", { name: "Apply move" })).toBeDisabled();
+    expect(calls.filter((call) => call.url.endsWith("/plans/execute"))).toHaveLength(0);
   });
 
   it("releases a missed-goal lock after authoritative telemetry stays idle", async () => {
@@ -1301,6 +1569,83 @@ describe("SimpleArm", () => {
       arrivalTimeoutMs: 10_000,
     });
     expect(calls.filter((call) => call.url.endsWith("/plans/execute"))).toHaveLength(0);
+  });
+
+  it("keeps omitted Camera tracking through a floor route with nullable Base output", async () => {
+    const user = userEvent.setup();
+    const { request: normal } = harness({
+      planPreviewFailure: { status: 409, detail: FLOOR_SWEEP_REFUSAL },
+      sequencePreviewResponse: (body) => {
+        const waypoints = body.waypoints.map((waypoint, index) => ({
+          index,
+          startPose: {},
+          resolvedPose: index === body.waypoints.length - 1
+            ? { joint_1: null, joint_2: 30 }
+            : waypoint.targets,
+          warnings: [],
+          lowestClearanceMm: 35,
+        }));
+        return jsonResponse({
+          sequenceId: "armseq_test_1234",
+          sequenceDigest: `sha256:${"d".repeat(64)}`,
+          expiresAt: "2099-01-01T00:00:00Z",
+          expiresInMs: 120_000,
+          previewDurationMs: 12,
+          waypointCount: waypoints.length,
+          measuredPose: {},
+          waypoints,
+          warnings: [],
+          lowestClearanceMm: 35,
+        });
+      },
+    });
+    let executed = false;
+    let postExecutePolls = 0;
+    let cameraArrived = false;
+    const request = vi.fn<typeof fetch>(async (input, init) => {
+      const url = String(input);
+      if (url === "/api/arm/simple/state") {
+        const response = await normal(input, init);
+        const body = await response.json();
+        if (executed) postExecutePolls += 1;
+        return jsonResponse({
+          ...body,
+          moving: false,
+          joints: body.joints.map((candidate: { id: string }) => {
+            if (!executed) return candidate;
+            if (candidate.id === "joint_2") return { ...candidate, degrees: 30, moving: false };
+            if (candidate.id === "joint_3") return { ...candidate, degrees: 20, moving: false };
+            if (candidate.id === "joint_4") {
+              return { ...candidate, degrees: cameraArrived ? 36.5 : 30, moving: false };
+            }
+            return candidate;
+          }),
+        });
+      }
+      if (init?.method === "POST" && url.endsWith("/sequences/execute")) {
+        const response = await normal(input, init);
+        executed = true;
+        return response;
+      }
+      return normal(input, init);
+    });
+    const onControlBusyChange = vi.fn();
+    render(<SimpleArm request={request} onControlBusyChange={onControlBusyChange} />);
+    await screen.findByText("Base");
+
+    const shoulder = screen.getByRole("slider", { name: "Drive Shoulder" });
+    fireEvent.change(shoulder, { target: { value: "30" } });
+    fireEvent.change(screen.getByRole("slider", { name: "Drive Elbow" }), { target: { value: "20" } });
+    fireEvent.change(screen.getByRole("slider", { name: "Drive Camera" }), { target: { value: "40" } });
+    fireEvent.pointerUp(shoulder);
+
+    expect(await screen.findByText("Floor-safe route ready · 2 checked legs")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Apply move" }));
+    await waitFor(() => expect(postExecutePolls).toBeGreaterThanOrEqual(2), { timeout: 2_500 });
+    expect(onControlBusyChange).toHaveBeenLastCalledWith(true);
+    cameraArrived = true;
+    await waitFor(() => expect(onControlBusyChange).toHaveBeenLastCalledWith(false));
+    expect(screen.queryByText(/target was not reached/i)).not.toBeInTheDocument();
   });
 
   it("invalidates a ready automatic floor route when STOP is observed externally", async () => {

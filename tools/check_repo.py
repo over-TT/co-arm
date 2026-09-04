@@ -25,6 +25,7 @@ REQUIRED = {
     "LICENSING.md",
     "THIRD_PARTY_NOTICES.md",
     "docs/STATUS.md",
+    "docs/QUICKSTART.md",
     "docs/SETUP_WITH_CODEX.md",
     "docs/CONTROL_AND_SAFETY.md",
     "docs/HARDWARE.md",

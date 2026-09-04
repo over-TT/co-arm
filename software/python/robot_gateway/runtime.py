@@ -14,9 +14,9 @@ import os
 from pathlib import Path
 import secrets
 import stat
-from typing import AsyncIterator, Sequence
+from typing import AsyncIterator, Awaitable, Callable, Sequence
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 import uvicorn
 
@@ -39,6 +39,7 @@ ALLOWED_BIND_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
 MIN_TOKEN_LENGTH = 32
 MAX_TOKEN_LENGTH = 256
 _TOKEN_FILE_MODE = stat.S_IRUSR | stat.S_IWUSR
+GATEWAY_INSTANCE_HEADER = "X-Robot-Gateway-Instance"
 
 
 class GatewayConfigurationError(ValueError):
@@ -204,6 +205,16 @@ def create_app(
         lifespan=lifespan,
     )
 
+    @app.middleware("http")
+    async def attach_gateway_instance(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        # Process provenance stays stable when the controller reconnects. A new
+        # gateway process receives a new value, invalidating reviewed plans.
+        response = await call_next(request)
+        response.headers[GATEWAY_INSTANCE_HEADER] = gateway_instance_id
+        return response
+
     @app.get("/healthz", include_in_schema=False)
     async def healthz() -> dict[str, object]:
         return {
@@ -351,6 +362,7 @@ __all__ = [
     "DEFAULT_HOST",
     "DEFAULT_PORT",
     "GatewayConfigurationError",
+    "GATEWAY_INSTANCE_HEADER",
     "build_parser",
     "create_app",
     "create_gateway_app",
