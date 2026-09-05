@@ -360,8 +360,10 @@ done < "$expected_modules"
 require_file "$install_relative/requirements-pi.txt"
 require_file "$install_relative/.robot-gateway.token"
 require_file var/lib/arm-gateway/arm-joints.json
-require_file var/lib/arm-gateway/arm-joints.recovery-provenance.json
-require_file var/lib/arm-gateway/recovery-manifest.json
+# Recovery history is optional on a first deployment and may describe an older
+# calibration. Retain it verbatim; snapshot metadata below binds today's bytes.
+add_file var/lib/arm-gateway/arm-joints.recovery-provenance.json
+add_file var/lib/arm-gateway/recovery-manifest.json
 require_file etc/systemd/system/arm-gateway.service
 require_file boot/firmware/config.txt
 require_file boot/firmware/cmdline.txt
@@ -450,8 +452,6 @@ canonical_source_contract_sha256=$(sha256sum "$expected_canonical_source" | awk 
 for required in \
   "$install_relative/.robot-gateway.token" \
   var/lib/arm-gateway/arm-joints.json \
-  var/lib/arm-gateway/arm-joints.recovery-provenance.json \
-  var/lib/arm-gateway/recovery-manifest.json \
   etc/systemd/system/arm-gateway.service \
   boot/firmware/config.txt \
   boot/firmware/cmdline.txt \
@@ -468,6 +468,42 @@ sudo install -d -m 0700 -o root -g root "$metadata_dir"
 sudo install -m 0600 -o root -g root "$expected_modules" "$metadata_dir/gateway-modules.txt"
 sudo install -m 0600 -o root -g root "$expected_canonical_source" \
   "$metadata_dir/canonical-source.sha256"
+sudo python3 - "$snapshot_root" <<'PY_CALIBRATION_SNAPSHOT'
+import hashlib
+import json
+import os
+from pathlib import Path
+import sys
+
+root = Path(sys.argv[1])
+calibration = root / 'var/lib/arm-gateway/arm-joints.json'
+digest = hashlib.sha256(calibration.read_bytes()).hexdigest()
+prior = root / 'var/lib/arm-gateway/arm-joints.recovery-provenance.json'
+status = 'absent'
+if prior.exists():
+    try:
+        document = json.loads(prior.read_text(encoding='utf-8'))
+        attested = document['artifact']['sha256']
+        if not isinstance(attested, str) or len(attested) != 64 or any(
+            c not in '0123456789abcdef' for c in attested
+        ):
+            raise ValueError('Invalid historical calibration digest')
+        status = 'matches-frozen-bytes' if attested == digest else 'stale'
+    except (ValueError, TypeError, KeyError, UnicodeError):
+        status = 'malformed'
+payload = {
+    'schema': 'arm-calibration-snapshot.v1',
+    'artifact': {'path': 'var/lib/arm-gateway/arm-joints.json', 'sha256': digest},
+    'historicalProvenanceStatus': status,
+    'baseContinuityClaimed': False,
+    'physicalBaseRezeroRequiredOnRestore': True,
+}
+target = root / 'metadata/calibration-snapshot.json'
+with target.open('x', encoding='utf-8', newline='\n') as output:
+    json.dump(payload, output, sort_keys=True, separators=(',', ':'))
+    output.write('\n')
+os.chmod(target, 0o600)
+PY_CALIBRATION_SNAPSHOT
 sudo find "$snapshot_root" -type f ! -path "$metadata_dir/*" -printf '%P\000' \
   > "$snapshot_checksum_list" || incomplete
 LC_ALL=C sort -zu "$snapshot_checksum_list" -o "$snapshot_checksum_list" || incomplete
@@ -484,6 +520,8 @@ captured_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 physical_profile_present=no
 stop_latch_present=no
 base_reference_gate_present=no
+calibration_provenance_present=no
+recovery_manifest_present=no
 physical_uart_dropin_present=no
 headless_cleanup_marker_present=no
 recovery_source_present=no
@@ -494,6 +532,8 @@ fake_hwclock_present=no
 sudo test -f "$snapshot_root/var/lib/arm-gateway/physical-arm-profile.json" && physical_profile_present=yes
 sudo test -f "$snapshot_root/var/lib/arm-gateway/arm-clear-required.json" && stop_latch_present=yes
 sudo test -f "$snapshot_root/var/lib/arm-gateway/base-reference-required.json" && base_reference_gate_present=yes
+sudo test -f "$snapshot_root/var/lib/arm-gateway/arm-joints.recovery-provenance.json" && calibration_provenance_present=yes
+sudo test -f "$snapshot_root/var/lib/arm-gateway/recovery-manifest.json" && recovery_manifest_present=yes
 sudo test -f "$snapshot_root/etc/systemd/system/arm-gateway.service.d/20-arm-controller-uart.conf" && physical_uart_dropin_present=yes
 sudo test -f "$snapshot_root/var/lib/arm-gateway/headless-network-config-removed.json" && headless_cleanup_marker_present=yes
 if sudo find "$snapshot_root/var/lib/arm-gateway/recovery-source" -type f -print -quit \
@@ -536,8 +576,9 @@ sudo test -f "$snapshot_root/etc/fake-hwclock.data" && fake_hwclock_present=yes
   printf 'usbMediaBindingPresent\t%s\n' "$usb_media_binding_present"
   printf 'fstabPresent\t%s\n' "$fstab_present"
   printf 'fakeHwclockPresent\t%s\n' "$fake_hwclock_present"
-  printf 'requiredCalibrationProvenancePresent\tyes\n'
-  printf 'requiredRecoveryManifestPresent\tyes\n'
+  printf 'historicalCalibrationProvenancePresent\t%s\n' "$calibration_provenance_present"
+  printf 'historicalRecoveryManifestPresent\t%s\n' "$recovery_manifest_present"
+  printf 'calibrationSnapshotMetadataPresent\tyes\n'
   printf 'requiredDirectLanNetplanPresent\tyes\n'
   printf 'directLanProfilePath\t%s\n' "$direct_lan_profile"
   printf 'directLanExpectedInterface\teth0\n'

@@ -82,6 +82,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
       - name: Parse the retained operations scripts
         shell: pwsh
         run: |
@@ -104,3 +107,11 @@ jobs:
             throw "One or more operations scripts failed to parse."
           }
           Write-Output "Parsed $($scripts.Count) PowerShell scripts."
+      - name: Exercise Windows recovery preparation and permission gates
+        working-directory: software/python
+        shell: pwsh
+        run: |
+          python -m pip install pytest==9.0.3
+          if ($LASTEXITCODE -ne 0) { throw "Recovery test dependency installation failed." }
+          python -m pytest -q -p no:cacheprovider robot_gateway/tests/test_prepare_arm_recovery.py robot_gateway/tests/test_arm_pi_restore_script.py robot_gateway/tests/test_arm_pi_backup_script.py
+          if ($LASTEXITCODE -ne 0) { throw "Windows recovery regressions failed." }

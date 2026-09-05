@@ -33,6 +33,7 @@ import math
 import os
 import re
 import secrets
+import stat
 from pathlib import Path
 import tempfile
 import threading
@@ -558,6 +559,12 @@ class CalibrateRequest(StrictContract):
     # spins freely under a hand, half a second is tens of degrees, so pressing
     # "here" stored somewhere the joint had already left.
     here: list[Literal["rawZero", "rawMin", "rawMax"]] | None = None
+    # A recovery image deliberately carries no trustworthy Base frame.  The
+    # independent recovery marker may therefore be removed only by the same
+    # current-turn, operator-confirmed action used by arm_set_base_zero and the
+    # dashboard's explicit Set zero here button.  Ordinary calibration remains
+    # backwards compatible when no recovery marker exists.
+    confirmedPhysicalBaseZero: Literal[True] | None = None
 
 
 class TargetRequest(StrictContract):
@@ -1093,6 +1100,9 @@ class JointStore:
 
     _FILENAME = "arm-joints.json"
     _SAFETY_LATCH_FILENAME = "arm-clear-required.json"
+    _BASE_REFERENCE_LATCH_FILENAME = "base-reference-required.json"
+    _BASE_REFERENCE_SCHEMA = "arm-base-reference-required.v1"
+    _BASE_REFERENCE_REASON = "RECOVERY_ARCHIVE_BASE_FRAME_UNTRUSTED"
 
     def __init__(self, state_dir: str | os.PathLike[str] | None = None) -> None:
         self._lock = threading.RLock()
@@ -1111,6 +1121,14 @@ class JointStore:
             if self._state_dir is not None
             else None
         )
+        self._base_reference_latch_path = (
+            self._state_dir / self._BASE_REFERENCE_LATCH_FILENAME
+            if self._state_dir is not None
+            else None
+        )
+        # If retiring the durable marker fails after unlink, keep this process
+        # fail-closed even while the best-effort on-disk rollback is attempted.
+        self._base_reference_clear_incomplete = False
         if self._path is not None and self._path.exists():
             try:
                 document = json.loads(self._path.read_text(encoding="utf-8"))
@@ -1128,9 +1146,11 @@ class JointStore:
         with self._lock:
             return self._joints[name]
 
-    def save(self) -> None:
+    def save(self, *, required: bool = False) -> bool:
         if self._path is None or self._state_dir is None:
-            return
+            if required:
+                raise OSError("arm_state_dir is required for a durable joint calibration")
+            return False
         with self._lock:
             payload = {name: joint.as_dict() for name, joint in self._joints.items()}
         encoded = (json.dumps(payload, indent=1, sort_keys=True) + "\n").encode("utf-8")
@@ -1139,11 +1159,142 @@ class JointStore:
             descriptor, temporary = tempfile.mkstemp(prefix=".arm-joints-", dir=self._state_dir)
             with os.fdopen(descriptor, "wb") as handle:
                 handle.write(encoded)
+                handle.flush()
+                os.fsync(handle.fileno())
             os.replace(temporary, self._path)
+            if os.name == "posix":
+                os.chmod(self._path, 0o600)
+                directory = os.open(self._state_dir, os.O_RDONLY)
+                try:
+                    os.fsync(directory)
+                finally:
+                    os.close(directory)
+            return True
         except OSError:
             # Losing the file costs a recalibration, not safety. Never take the
             # arm offline because a disk write failed.
-            pass
+            if required:
+                raise
+            return False
+
+    def base_reference_required(self) -> bool:
+        """Presence is a fail-closed global motion gate, even when malformed."""
+
+        if self._base_reference_clear_incomplete:
+            return True
+        path = self._base_reference_latch_path
+        if path is None:
+            return False
+        try:
+            path.lstat()
+            return True
+        except FileNotFoundError:
+            return False
+        except OSError:
+            return True
+
+    def base_reference_reason(self) -> str | None:
+        if self._base_reference_clear_incomplete:
+            return "BASE_REFERENCE_MARKER_INVALID"
+        path = self._base_reference_latch_path
+        if path is None:
+            return None
+        try:
+            result = path.lstat()
+            if not stat.S_ISREG(result.st_mode) or stat.S_ISLNK(result.st_mode):
+                raise ValueError
+            document = json.loads(path.read_text(encoding="utf-8"))
+            if (
+                not isinstance(document, dict)
+                or set(document)
+                != {
+                    "schema",
+                    "baseReferenceRequired",
+                    "reason",
+                    "sourceArchiveSha256",
+                    "calibrationSha256",
+                }
+                or document.get("schema") != self._BASE_REFERENCE_SCHEMA
+                or document.get("baseReferenceRequired") is not True
+                or document.get("reason") != self._BASE_REFERENCE_REASON
+                or not isinstance(document.get("sourceArchiveSha256"), str)
+                or re.fullmatch(r"[0-9a-f]{64}", document["sourceArchiveSha256"])
+                is None
+                or not isinstance(document.get("calibrationSha256"), str)
+                or re.fullmatch(r"[0-9a-f]{64}", document["calibrationSha256"])
+                is None
+            ):
+                raise ValueError
+            return self._BASE_REFERENCE_REASON
+        except FileNotFoundError:
+            return None
+        except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
+            return "BASE_REFERENCE_MARKER_INVALID"
+
+    def clear_base_reference_requirement(self) -> None:
+        """Clear only after a successfully persisted explicit Base homing."""
+
+        path = self._base_reference_latch_path
+        if path is None or self._state_dir is None:
+            raise OSError("arm_state_dir is required for a durable Base-reference gate")
+        if not self.base_reference_required():
+            return
+        if self.base_reference_reason() != self._BASE_REFERENCE_REASON:
+            raise OSError("Base-reference gate is malformed and cannot be cleared")
+        payload = path.read_bytes()
+        self._base_reference_clear_incomplete = True
+        try:
+            path.unlink()
+            if os.name == "posix":
+                directory = os.open(self._state_dir, os.O_RDONLY)
+                try:
+                    os.fsync(directory)
+                finally:
+                    os.close(directory)
+        except OSError:
+            # Restore the exact gate when possible.  Even if that recovery write
+            # also fails, the in-process flag above keeps every motion lane
+            # denied instead of converting an I/O error into authority.
+            try:
+                if not path.exists():
+                    descriptor, temporary = tempfile.mkstemp(
+                        prefix=".base-reference-required-", dir=self._state_dir
+                    )
+                    try:
+                        with os.fdopen(descriptor, "wb") as handle:
+                            descriptor = -1
+                            handle.write(payload)
+                            handle.flush()
+                            os.fsync(handle.fileno())
+                        os.replace(temporary, path)
+                        if os.name == "posix":
+                            os.chmod(path, 0o600)
+                    finally:
+                        if descriptor >= 0:
+                            os.close(descriptor)
+                        try:
+                            os.unlink(temporary)
+                        except FileNotFoundError:
+                            pass
+            except OSError:
+                pass
+            raise
+        self._base_reference_clear_incomplete = False
+
+    def persisted_base_zero_matches(self, expected: int) -> bool:
+        """Re-read the durable artifact before authorizing marker removal."""
+
+        if self._path is None or not self._path.is_file() or self._path.is_symlink():
+            return False
+        try:
+            document = json.loads(self._path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            return False
+        base = document.get("joint_1") if isinstance(document, dict) else None
+        if not isinstance(base, dict):
+            return False
+        stored = base.get("rawZero")
+        return isinstance(stored, int) and not isinstance(stored, bool) and stored == expected
 
     def safety_latch_reason(self) -> str | None:
         """Read the fail-closed Pi latch left by an unconfirmed final STOP."""
@@ -1364,6 +1515,17 @@ class ArmService:
                 ),
             )
 
+    def require_base_reference_ready(self) -> None:
+        """Refuse every torque/motion lane while recovery Base zero is untrusted."""
+
+        reason = self._store.base_reference_reason()
+        if reason is not None:
+            raise ControllerCommandError(
+                "BASE_REFERENCE_REQUIRED",
+                {"baseReferenceReason": reason},
+            )
+
+
     @contextmanager
     def commissioning_mutation(self):
         """Exclude every background/user writer while commissioning takes over.
@@ -1389,6 +1551,8 @@ class ArmService:
     def _commissioning_lane(self, *, allow_clear_required: bool):
         with self._operation_lock, self._motion_lock, self._authority_lock:
             self.require_live_follow_idle()
+            if not allow_clear_required:
+                self.require_base_reference_ready()
             reported = self._controller.transport_state()
             with self._lock:
                 clear_required = (
@@ -2167,7 +2331,10 @@ class ArmService:
         # browser can poll as fast as it likes without touching the serial port.
         reported = self._controller.transport_state()
         last_scan = _safe_last_scan(reported.get("lastScan"))
-        frame_current = self._multi_turn_frame_current(reported)
+        frame_current = (
+            self._multi_turn_frame_current(reported)
+            and not self._store.base_reference_required()
+        )
         telemetry = self.telemetry_of(reported)
         joints = []
         for name in JOINT_IDS:
@@ -2226,6 +2393,7 @@ class ArmService:
             if telemetry_generation > 0 and telemetry_observed_at > 0
             else None
         )
+        base_reference_reason = self._store.base_reference_reason()
         return {
             "connection": reported.get("connection"),
             "bus": reported.get("bus"),
@@ -2246,6 +2414,8 @@ class ArmService:
                 local_inspection_required
                 or reported.get("operatorInspectionRequired") is True
             ),
+            "baseReferenceRequired": base_reference_reason is not None,
+            "baseReferenceReason": base_reference_reason,
             "safetyStopReason": (
                 reported.get("safetyStopReason")
                 if reported.get("safetyStopReason")
@@ -2296,6 +2466,47 @@ class ArmService:
 
     def _calibrate_locked(self, name: str, request: CalibrateRequest) -> dict[str, object]:
         joint = self._store.get(name)
+        recovery_gate_active = self._store.base_reference_required()
+        recovery_base_home = (
+            recovery_gate_active
+            and name == "joint_1"
+            and joint.multiTurn
+            and request.here is not None
+            and "rawZero" in request.here
+        )
+        if recovery_base_home:
+            if request.confirmedPhysicalBaseZero is not True:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=(
+                        "Recovery Base re-zero requires current-turn confirmation "
+                        "that Base is physically on its zero mark."
+                    ),
+                )
+            conflicting = (
+                request.here != ["rawZero"]
+                or request.rawZero is not None
+                or request.rawMin is not None
+                or request.rawMax is not None
+                or request.minDegrees is not None
+                or request.maxDegrees is not None
+                or request.ratio is not None
+                or request.direction is not None
+                or request.speed is not None
+                or request.accel is not None
+                or request.servoId is not None
+                or request.zeroFromLimits is not None
+                or request.clear is not None
+            )
+            if conflicting:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=(
+                        "Recovery Base re-zero must be one unambiguous Set zero here "
+                        "request with no typed, limit-derived, clear, or configuration override."
+                    ),
+                )
+        recovery_home_position: int | None = None
         if request.servoId is not None:
             duplicate_name = next(
                 (
@@ -2338,6 +2549,8 @@ class ArmService:
                 if joint.multiTurn and "rawZero" in request.here
                 else self.live_raw(joint.servoId)
             )
+            if recovery_base_home:
+                recovery_home_position = live
             if live is None:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
@@ -2402,7 +2615,25 @@ class ArmService:
             joint.rawZero = round((joint.rawMin + joint.rawMax) / 2)
         for field in request.clear or []:
             setattr(joint, field, None)
-        self._store.save()
+        if recovery_base_home:
+            if (
+                not isinstance(recovery_home_position, int)
+                or isinstance(recovery_home_position, bool)
+                or joint.rawZero != recovery_home_position
+                or joint.servoId not in self._multi_turn_armed
+                or self._multi_turn_raw.get(joint.servoId) != recovery_home_position
+            ):
+                raise ControllerCommandError("BASE_HOME_UNVERIFIED")
+            # HOME_MULTI_TURN has already returned a verified native absolute
+            # frame. Persist the translated Base calibration durably before the
+            # independent recovery gate can disappear. Ordinary clear-STOP does
+            # not call this path and cannot clear this marker.
+            self._store.save(required=True)
+            if not self._store.persisted_base_zero_matches(recovery_home_position):
+                raise ControllerCommandError("BASE_HOME_PERSISTENCE_UNVERIFIED")
+            self._store.clear_base_reference_requirement()
+        else:
+            self._store.save()
         return self.state()
 
     def _apply_hold(
@@ -2419,6 +2650,8 @@ class ArmService:
         outstanding torque-off obligation and no authority.
         """
 
+        if wanted:
+            self.require_base_reference_ready()
         reported = self._controller.transport_state()
         current = reported.get("heldServoIds")
         current = current if isinstance(current, list) else []
@@ -2623,8 +2856,8 @@ class ArmService:
             }
         )
 
-    @staticmethod
-    def _require_plan_health(reported: dict[str, object]) -> str:
+    def _require_plan_health(self, reported: dict[str, object]) -> str:
+        self.require_base_reference_ready()
         if reported.get("connection") != "online":
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -5184,10 +5417,10 @@ class ArmService:
 
     # ---- bounded Shoulder/Elbow Fast Follow -------------------------------
 
-    @staticmethod
-    def _live_follow_motion_health(reported: Mapping[str, object]) -> str:
+    def _live_follow_motion_health(self, reported: Mapping[str, object]) -> str:
         """Require live motion health without rejecting `moving` itself."""
 
+        self.require_base_reference_ready()
         if reported.get("connection") != "online":
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -6621,6 +6854,7 @@ class ArmService:
 
         if not planned:
             return []
+        self.require_base_reference_ready()
         servo_ids = [joint.servoId for _, joint, _ in planned]
         if len(set(servo_ids)) != len(servo_ids):
             raise HTTPException(
@@ -6658,6 +6892,9 @@ class ArmService:
                 # emits one grouped packet per dialect; mixed-family groups
                 # therefore have bounded cross-family skew. Older deployed HATs
                 # under-advertise and stay on the guarded MOVE sequence below.
+                # HOLD acquisition can outlive a newly installed recovery gate.
+                # Recheck at the final grouped dispatch boundary.
+                self.require_base_reference_ready()
                 move_set(
                     [
                         (joint.servoId, goal, joint.speed, joint.accel)
@@ -6689,6 +6926,8 @@ class ArmService:
                         # the watchdog it feeds is what keeps the rest of the burst
                         # authorised. See MOVE_YIELD_SECONDS.
                         time.sleep(MOVE_YIELD_SECONDS)
+                    # The gate may appear during HOLD or between legacy moves.
+                    self.require_base_reference_ready()
                     self._move(joint, goal)
                     # Remember only a command the controller actually accepted. A
                     # failed first send must not be resurrected later by the chase
@@ -6782,6 +7021,15 @@ class ArmService:
                 held = set(self._held)
             if not outstanding:
                 return
+            try:
+                self.require_base_reference_ready()
+            except ControllerCommandError:
+                # A recovery marker can appear independently of this process.
+                # Forget every queued resend before touching transport; an old
+                # accepted goal must never survive into the newly untrusted
+                # Base frame.
+                self._forget_goals(list(outstanding))
+                return
             reported = self._controller.transport_state()
             telemetry = self.telemetry_of(reported)
             now = time.monotonic()
@@ -6816,6 +7064,14 @@ class ArmService:
                     )
                     finished.append(name)
                     continue
+                try:
+                    # Re-check immediately before every physical resend.  This
+                    # closes the race where the marker is created after the
+                    # first loop-level check but before `_move`.
+                    self.require_base_reference_ready()
+                except ControllerCommandError:
+                    self._forget_goals(list(outstanding))
+                    return
                 with self._lock:
                     self._goals[name] = (goal, attempts - 1, expires)
                     self._last_move = time.monotonic()

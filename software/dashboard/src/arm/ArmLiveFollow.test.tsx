@@ -1,4 +1,5 @@
 import axe from "axe-core";
+import { StrictMode } from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -118,6 +119,24 @@ afterEach(() => {
 });
 
 describe("ArmLiveFollow", () => {
+  it("loads telemetry and completes a session after StrictMode effect replay", async () => {
+    const request = defaultRequest();
+    const view = render(<StrictMode><ArmLiveFollow request={request} backendId="real" /></StrictMode>);
+
+    const enable = screen.getByRole("button", { name: "Enable live control" });
+    await waitFor(() => expect(enable).toBeEnabled());
+    fireEvent.click(enable);
+    expect(await screen.findByText(/LIVE: release flushes/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Target one" }));
+    await waitFor(() => expect(request.mock.calls.filter(([url]) => String(url).endsWith("/frame"))).toHaveLength(1));
+    fireEvent.click(screen.getByRole("button", { name: "End session" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Enable live control" })).toBeEnabled());
+    expect(request.mock.calls.filter(([url]) => String(url).endsWith("/start"))).toHaveLength(1);
+    expect(request.mock.calls.filter(([url]) => String(url).endsWith("/end"))).toHaveLength(1);
+    view.unmount();
+    expect(request.mock.calls.filter(([url]) => String(url).endsWith("/end"))).toHaveLength(1);
+  });
+
   it("is REAL-only, keeps the planar surface visible, and marks STOP unavailable on SIM", async () => {
     const request = defaultRequest();
     render(<ArmLiveFollow request={request} backendId="sim" />);
@@ -176,6 +195,22 @@ describe("ArmLiveFollow", () => {
     expect(enable).toBeEnabled();
     fireEvent.click(enable);
     await waitFor(() => expect(request.mock.calls.some(([url]) => String(url).endsWith("/start"))).toBe(true));
+  });
+
+  it("blocks even Shoulder and Elbow when restored Base reference is explicitly required", async () => {
+    const request = vi.fn<typeof fetch>(async (input) => {
+      const url = String(input);
+      if (url === "/api/session") return response({ actionToken: "t".repeat(40) });
+      if (url.endsWith("/state")) return response({ ...armState, baseReferenceRequired: true });
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    render(<ArmLiveFollow request={request} backendId="real" />);
+
+    expect(await screen.findByText(/Recovery requires physical Base alignment/)).toBeInTheDocument();
+    const enable = screen.getByRole("button", { name: "Enable live control" });
+    expect(enable).toBeDisabled();
+    fireEvent.click(enable);
+    expect(request.mock.calls.some(([url]) => String(url).endsWith("/start"))).toBe(false);
   });
 
   it("bounds a hung start and releases ownership only after the exact attempt is tombstoned", async () => {

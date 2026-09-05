@@ -65,6 +65,8 @@ function harness(overrides: {
   baseMinDegrees?: number;
   baseMaxDegrees?: number;
   stopped?: boolean;
+  baseReferenceRequired?: boolean;
+  baseReferenceReason?: "RECOVERY_ARCHIVE_BASE_FRAME_UNTRUSTED" | "BASE_REFERENCE_MARKER_INVALID" | null;
   planWarnings?: string[];
   planResolvedPose?: Record<string, unknown>;
   planPreviewFailure?: { status: number; detail: string };
@@ -103,6 +105,8 @@ function harness(overrides: {
   ];
   const state = {
     connection: overrides.connection ?? "online", bus: overrides.bus ?? "online", held: overrides.held ?? [], stopped: overrides.stopped ?? false,
+    baseReferenceRequired: overrides.baseReferenceRequired ?? false,
+    baseReferenceReason: overrides.baseReferenceReason ?? null,
     busTrouble: overrides.busTrouble ?? null,
     collisionSuspected: overrides.collisionSuspected ?? false,
     collisionId: overrides.collisionId ?? null,
@@ -1003,6 +1007,44 @@ describe("SimpleArm", () => {
     // reading up to a poll and a refresh old, so "here" landed where the joint
     // had been rather than where it was; the Pi now reads it as the request lands.
     expect(calibrate?.body).toEqual({ here: ["rawZero"] });
+  });
+
+  it("shows the independent recovery gate and confirms only its explicit zero action", async () => {
+    const user = userEvent.setup();
+    const { request, calls } = harness({
+      baseReferenceRequired: true,
+      baseReferenceReason: "RECOVERY_ARCHIVE_BASE_FRAME_UNTRUSTED",
+    });
+    render(<SimpleArm request={request} />);
+
+    expect(await screen.findByText(/Recovery Base reference is untrusted/i)).toBeInTheDocument();
+    expect(screen.getByText(/Clear STOP will not unlock motion/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Hold all" })).toBeDisabled();
+    expect(screen.getByRole("slider", { name: "Drive Shoulder" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Set Base zero here" })).toBeEnabled();
+
+    await user.click(screen.getByRole("button", { name: "Set Base zero here" }));
+    await waitFor(() => expect(calls.some((call) => call.url.endsWith("/joints/joint_1/calibrate"))).toBe(true));
+    expect(calls.find((call) => call.url.endsWith("/joints/joint_1/calibrate"))?.body)
+      .toEqual({
+        here: ["rawZero"],
+        confirmedPhysicalBaseZero: true,
+      });
+  });
+
+  it("keeps malformed recovery state locked without offering a zero action", async () => {
+    const { request, calls } = harness({
+      baseReferenceRequired: true,
+      baseReferenceReason: "BASE_REFERENCE_MARKER_INVALID",
+    });
+    render(<SimpleArm request={request} />);
+
+    expect(await screen.findByText(/Recovery Base-reference marker is invalid/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Hold all" })).toBeDisabled();
+    expect(screen.getByRole("slider", { name: "Drive Shoulder" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Set Base zero here" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "STOP" })).toBeEnabled();
+    expect(calls.filter((call) => call.url.endsWith("/calibrate"))).toHaveLength(0);
   });
 
   it("keeps drive and limits locked but allows explicit Base homing when position is unknown", async () => {

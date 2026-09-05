@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
+import tarfile
 
 import pytest
 
@@ -65,8 +68,9 @@ def test_recovery_script_is_sd_bound_pinned_and_phase_separated() -> None:
         "expectedRootDevice = $ExpectedRootDevice",
         '[ "$root" = "$expected_root" ]',
         '[ "$boot" = "$expected_boot" ]',
-        "[Parameter(Mandatory)] [ValidateNotNullOrEmpty()] [string] $CalibrationFile",
-        "[Parameter(Mandatory)] [ValidateNotNullOrEmpty()] [string] $CalibrationProvenanceFile",
+        "[string] $RecoveryArchivePath",
+        "[ValidatePattern('^[0-9a-f]{64}$')] [string] $RecoveryArchiveSha256",
+        "prepare_arm_recovery.py",
         "arm-gateway-physical-uart.conf",
         "do_serial_cons 1",
         "do_serial_hw 0",
@@ -468,8 +472,9 @@ def test_restore_and_deploy_scripts_parse_as_powershell(script: Path) -> None:
     assert completed.returncode == 0, completed.stderr
 
 
+@pytest.mark.parametrize("mutation", [None, "token", "source", "source-after-validate", "manifest-missing-row", "marker", "no-prepare"])
 def test_repeated_verify_reuses_latest_manifest_without_repreparing_it(
-    tmp_path: Path,
+    tmp_path: Path, mutation: str | None,
 ) -> None:
     powershell = shutil.which("powershell.exe") or shutil.which("powershell")
     if powershell is None:
@@ -491,7 +496,15 @@ def test_repeated_verify_reuses_latest_manifest_without_repreparing_it(
         "Set-StrictMode -Version Latest",
         1,
     )
+    if mutation == "source-after-validate":
+        fixture_source = fixture_source.replace(
+            "$context = New-SshContext",
+            "if ($Phase -eq 'Verify') { [System.IO.File]::WriteAllText("
+            "(Join-Path $packageDirectory 'simple_arm_api.py'), '# changed after validation') }\n"
+            "$context = New-SshContext", 1,
+        )
     fixture_script.write_text(fixture_source, encoding="utf-8")
+    shutil.copyfile(SCRIPT.parent / "prepare_arm_recovery.py", scripts / "prepare_arm_recovery.py")
     (scripts / "deploy-arm-gateway.ps1").write_text("# fixture\n", encoding="utf-8")
     (fixture_root / "operations" / "requirements-pi.txt").write_text(
         "fixture==1\n",
@@ -526,11 +539,29 @@ def test_repeated_verify_reuses_latest_manifest_without_repreparing_it(
     calibration = {
         f"joint_{index}": {**joint, "servoId": index} for index in range(1, 5)
     }
+    calibration["joint_4"].update(rawZero=512, rawMax=1023)
     calibration_path = recovery / "arm-joints.recovered.json"
     calibration_path.write_text(
         json.dumps(calibration, separators=(",", ":")) + "\n", encoding="utf-8"
     )
     calibration_sha256 = hashlib.sha256(calibration_path.read_bytes()).hexdigest()
+    archive_path = recovery / "snapshot.tar.gz"
+    member_path = "var/lib/arm-gateway/arm-joints.json"
+    sums = f"{calibration_sha256}  {member_path}\n".encode()
+    snapshot = b"schema\tarm-pi-recovery-backup.v3\nhostname\tarm-test-host\nuser\tarmtest\n"
+    metadata_sums = (f"{hashlib.sha256(sums).hexdigest()}  metadata/SHA256SUMS\n"
+                     f"{hashlib.sha256(snapshot).hexdigest()}  metadata/snapshot.tsv\n").encode()
+    with tarfile.open(archive_path, "w:gz") as archive:
+        for name, payload in (
+            (member_path, calibration_path.read_bytes()),
+            ("metadata/SHA256SUMS", sums),
+            ("metadata/snapshot.tsv", snapshot),
+            ("metadata/METADATA_SHA256SUMS", metadata_sums),
+        ):
+            member = tarfile.TarInfo(name)
+            member.size = len(payload)
+            archive.addfile(member, io.BytesIO(payload))
+    archive_sha256 = hashlib.sha256(archive_path.read_bytes()).hexdigest()
     provenance_path = recovery / "arm-joints.recovered.provenance.json"
     provenance_path.write_text(
         json.dumps(
@@ -577,6 +608,12 @@ def test_repeated_verify_reuses_latest_manifest_without_repreparing_it(
         str(calibration_path),
         "-CalibrationProvenanceFile",
         str(provenance_path),
+        "-RecoveryArchivePath",
+        str(archive_path),
+        "-RecoveryArchiveSha256",
+        archive_sha256,
+        "-PythonExecutable",
+        sys.executable,
         "-HostName",
         "arm-test.invalid",
         "-UserName",
@@ -596,6 +633,13 @@ def test_repeated_verify_reuses_latest_manifest_without_repreparing_it(
         "-DirectLanAddressCidr",
         "198.51.100.2/24",
     ]
+    if mutation == "no-prepare":
+        result = subprocess.run([*common, "-Phase", "Bootstrap"],
+                                capture_output=True, text=True, timeout=20, check=False, env=environment)
+        assert result.returncode != 0
+        assert "Prepare first" in result.stdout + result.stderr
+        assert not (recovery / "LATEST.json").exists()
+        return
     prepared = subprocess.run(
         [*common, "-Phase", "Prepare"],
         capture_output=True,
@@ -609,7 +653,38 @@ def test_repeated_verify_reuses_latest_manifest_without_repreparing_it(
     latest_bytes = latest_path.read_bytes()
     prepared_files = sorted(recovery.glob("prepared-*.json"))
     assert len(prepared_files) == 1
+    manifest = json.loads(latest_bytes)
+    marker_path = recovery / ("archive-" + archive_sha256) / "base-reference-required.json"
+    marker = json.loads(marker_path.read_bytes())
+    assert marker["baseReferenceRequired"] is True
+    assert marker["sourceArchiveSha256"] == archive_sha256
+    assert marker["calibrationSha256"] == calibration_sha256
+    assert manifest["calibrationRecovery"]["physicalBaseRezeroRequired"] is True
+    assert manifest["calibrationRecovery"]["baseContinuityClaimed"] is False
+    assert manifest["calibrationRecovery"]["baseReferenceMarkerSha256"] == hashlib.sha256(marker_path.read_bytes()).hexdigest()
 
+    if mutation == "token":
+        token_path.write_text("u" * 64 + "\n", encoding="ascii")
+    elif mutation == "source":
+        (gateway / "simple_arm_api.py").write_text("# changed source\n", encoding="utf-8")
+    elif mutation == "manifest-missing-row":
+        manifest["inputs"].pop()
+        latest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    elif mutation == "marker":
+        marker_path.write_text("{}\n", encoding="utf-8")
+    if mutation:
+        refused = subprocess.run([*common, "-Phase", "Verify"], capture_output=True, text=True,
+                                 timeout=20, check=False, env=environment)
+        assert refused.returncode != 0
+        if mutation == "source-after-validate":
+            assert "Recovery input changed after the prepared manifest was validated." in refused.stderr
+        else:
+            assert "Reusing exact prepared" not in refused.stdout
+        assert sorted(recovery.glob("prepared-*.json")) == prepared_files
+        return
+
+    files_before_verify = {path.relative_to(recovery): (path.read_bytes(), path.stat().st_mtime_ns)
+                           for path in recovery.rglob("*") if path.is_file()}
     for _ in range(2):
         verified = subprocess.run(
             [*common, "-Phase", "Verify"],
@@ -622,6 +697,28 @@ def test_repeated_verify_reuses_latest_manifest_without_repreparing_it(
         assert verified.returncode == 0, verified.stderr
         assert latest_path.read_bytes() == latest_bytes
         assert sorted(recovery.glob("prepared-*.json")) == prepared_files
+        assert files_before_verify == {path.relative_to(recovery): (path.read_bytes(), path.stat().st_mtime_ns)
+                                       for path in recovery.rglob("*") if path.is_file()}
+
+
+def test_bootstrap_installs_the_digest_bound_base_gate_before_starting_gateway():
+    source = SCRIPT.read_text(encoding="utf-8")
+    bootstrap = source[source.index("function Invoke-Bootstrap"):source.index("function Invoke-ConfigureUart")]
+    assert 'Source = $baseReferenceMarkerPath' in source
+    assert "Remote = '/var/lib/arm-gateway/base-reference-required.json'" in source
+    assert 'Copy-ToRemoteStage -Context $Context -Source $baseReferenceMarkerPath' in bootstrap
+    install = bootstrap.index('"$stage/base-reference-required.json" /var/lib/arm-gateway/base-reference-required.json')
+    assert bootstrap.index("sudo systemctl stop arm-gateway.service") < install
+    assert install < bootstrap.index("PY_BASE_GATE_DURABLE") < bootstrap.index('"$stage/arm-joints.json" /var/lib/arm-gateway/arm-joints.json')
+    assert install < bootstrap.index("sudo systemctl start arm-gateway.service")
+
+
+def test_activation_requires_full_recovery_contract_before_restart():
+    source = SCRIPT.read_text(encoding="utf-8")
+    activate = source[source.index("function Invoke-Activate"):source.index("function Invoke-Deactivate")]
+    assert 'New-RemoteDigestContract -Scope ActivatePreflight -ManifestPath $ManifestPath' in activate
+    assert activate.index("Pre-activation full prepared-install integrity verification") < activate.index("sudo systemctl restart")
+    assert 'state.get("baseReferenceRequired") is not True' in source
 
 
 def test_physical_uart_drop_in_matches_the_reviewed_loopback_service() -> None:

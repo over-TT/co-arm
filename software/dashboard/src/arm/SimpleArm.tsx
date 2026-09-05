@@ -1444,6 +1444,7 @@ export function SimpleArm({
   const held = state?.held ?? [];
   const stopped = state?.stopped ?? false;
   const busReady = state?.connection === "online" && state.bus === "online" && !stopped;
+  const motionReady = busReady && state?.baseReferenceRequired !== true;
   const expectedJointCount = state?.joints.length ?? ALL_JOINTS.length;
   const liveJointCount = state?.joints.filter((joint) =>
     joint.online === true
@@ -1558,7 +1559,12 @@ export function SimpleArm({
     setMessage(null);
     setBaseAction({ kind: "home", phase: "sending" });
     try {
-      const next = await api.calibrate(joint.id, { here: ["rawZero"] });
+      const next = await api.calibrate(joint.id, {
+        here: ["rawZero"],
+        ...(state?.baseReferenceRequired
+          ? { confirmedPhysicalBaseZero: true as const }
+          : {}),
+      });
       commitMutationState(next);
       setCommanded((current) => ({ ...current, [joint.id]: undefined }));
       setBaseAction({ kind: "home", phase: "accepted" });
@@ -1790,7 +1796,7 @@ export function SimpleArm({
         <div className="simplearm-bar-actions">
           <button type="button" disabled={sequenceRunning || scanBusy} onClick={() => void scanArm()}>{scanBusy ? "Scanning…" : "Scan"}</button>
           <button type="button" disabled={sequenceRunning} aria-expanded={renaming} onClick={() => setRenaming((open) => !open)}>Servo ID</button>
-          <button type="button" disabled={sequenceRunning || (!held.length && (!busReady || !allJointsOnline))} onClick={() => void (held.length ? setHold([]) : holdAll())}>{held.length ? "Release all" : "Hold all"}</button>
+          <button type="button" disabled={sequenceRunning || (!held.length && (!motionReady || !allJointsOnline))} onClick={() => void (held.length ? setHold([]) : holdAll())}>{held.length ? "Release all" : "Hold all"}</button>
           {/* The keep-out plane, not a range of motion. Off lets the arm be
               driven below the floor deliberately; the Pi holds the flag, so the
               drag constraint and the server-side clamp switch together. */}
@@ -1822,6 +1828,14 @@ export function SimpleArm({
         <p className="simplearm-note" role="alert">
           STOP is latched — the controller is refusing every command. Check the arm, then
           <button type="button" disabled={sequenceRunning} onClick={() => void api?.clearStop().then(commitMutationState).catch((error) => setMessage(error instanceof Error ? error.message : "STOP would not clear."))}>Clear STOP</button>
+        </p>
+      ) : null}
+      {state?.baseReferenceRequired ? (
+        <p className="simplearm-note" role="alert">
+          {state.baseReferenceReason === "BASE_REFERENCE_MARKER_INVALID"
+            ? "Recovery Base-reference marker is invalid. Motion stays locked; repair the recovery state before homing."
+            : "Recovery Base reference is untrusted. Clear STOP will not unlock motion. Put Base exactly on its physical zero mark, then press Set zero here."}
+          <span className="simplearm-sr-only"> Reason: {state.baseReferenceReason ?? "BASE_REFERENCE_MARKER_INVALID"}.</span>
         </p>
       ) : null}
       {/* "Gateway unreachable" used to be shown for this, which sent everyone
@@ -1907,7 +1921,7 @@ export function SimpleArm({
             <Arm2D
               pose={previewPose} measuredPose={measured} planned={planVisible}
               sequencePoses={motionMode === "sequence" ? sequencePoses : singleRoutePoses}
-              disabled={sequenceRunning || !busReady}
+              disabled={sequenceRunning || !motionReady}
               limits={modelLimits} geometry={DEFAULT_GEOMETRY}
               floorMm={floorMm}
               onPose={previewModel} onRelease={preparePlan}
@@ -2046,13 +2060,13 @@ export function SimpleArm({
                 <>
                   <button type="button" disabled={sequenceRunning || (editingWaypoint === null && (!sequenceDraftDirty || sequenceWaypoints.length >= 8))} onClick={storeWaypoint}>{editingWaypoint === null ? "Add waypoint" : "Update waypoint"}</button>
                   <button type="button" disabled={sequenceRunning || sequencePhase === "planning" || sequenceDraftDirty || editingWaypoint !== null || sequenceWaypoints.length < 2 || sequenceWaypoints.length > 8} onClick={() => void previewSequence()}>Preview all</button>
-                  <button type="button" className="simplearm-plan-apply" disabled={sequenceRunning || !preparedSequence || sequencePhase !== "ready" || !busReady || !livePoseAvailable} onClick={() => void applySequence()}>Apply all</button>
+                  <button type="button" className="simplearm-plan-apply" disabled={sequenceRunning || !preparedSequence || sequencePhase !== "ready" || !motionReady || !livePoseAvailable} onClick={() => void applySequence()}>Apply all</button>
                   <button type="button" disabled={sequenceRunning || sequenceWaypoints.length === 0} onClick={clearSequence}>Clear all</button>
                   {preparedSequence?.expiresInMs != null ? <span>reviewed for {Math.max(0, Math.ceil(preparedSequence.expiresInMs / 1000))}s</span> : null}
                 </>
               ) : (
                 <>
-                  <button type="button" className="simplearm-plan-apply" disabled={!preparedSingle || planPhase !== "ready" || !busReady || !livePoseAvailable} onClick={() => void applyPlan()}>Apply move</button>
+                  <button type="button" className="simplearm-plan-apply" disabled={!preparedSingle || planPhase !== "ready" || !motionReady || !livePoseAvailable} onClick={() => void applyPlan()}>Apply move</button>
                   <button type="button" disabled={planPhase === "idle" || planPhase === "applying" || planPhase === "executing"} onClick={cancelPlan}>Cancel</button>
                   {preparedSingleExpiresInMs != null ? <span>prepared with {Math.max(0, Math.ceil(preparedSingleExpiresInMs / 1000))}s validity</span> : null}
                 </>
@@ -2110,7 +2124,7 @@ export function SimpleArm({
                 <header>
                   <strong>{joint.name}</strong>
                   <output>{fixed(joint.degrees)}°</output>
-                  <button type="button" disabled={sequenceRunning || (free && (!busReady || !joint.online))} className={`simplearm-torque${free ? " is-free" : ""}`} onClick={() => void (free ? holdAll() : freeOnly(joint))}>{free ? "Hold" : "Free"}</button>
+                  <button type="button" disabled={sequenceRunning || (free && (!motionReady || !joint.online))} className={`simplearm-torque${free ? " is-free" : ""}`} onClick={() => void (free ? holdAll() : freeOnly(joint))}>{free ? "Hold" : "Free"}</button>
                 </header>
 
                 {id === "joint_1" ? (
@@ -2127,7 +2141,7 @@ export function SimpleArm({
                     scanDetected={baseDetectedByScan}
                     free={free}
                     stopped={stopped}
-                    apiReady={api !== null && !sequenceRunning && !scanBusy && !manualMotionInFlight && busReady}
+                    apiReady={api !== null && !sequenceRunning && !scanBusy && !manualMotionInFlight && busReady && state?.baseReferenceReason !== "BASE_REFERENCE_MARKER_INVALID"}
                     action={baseAction}
                     onHome={() => void homeBase(joint)}
                     onRestoreRange={() => void restoreBaseRange(joint)}
@@ -2140,7 +2154,7 @@ export function SimpleArm({
                   type="range" step="0.1"
                   aria-label={`Drive ${joint.name}`}
                   min={min} max={max} value={value}
-                  disabled={sequenceRunning || !busReady || !joint.calibrated || !joint.online || !positionTrusted || max - min < 1}
+                  disabled={sequenceRunning || !motionReady || !joint.calibrated || !joint.online || !positionTrusted || max - min < 1}
                   // Same contract as the flat view: the bar moves freely, the
                   // arm gets one goal when it is let go.
                   onChange={(event) => preview({ [id]: Number(event.currentTarget.value) })}
@@ -2156,7 +2170,7 @@ export function SimpleArm({
                   <input
                     type="number" step="any"
                     aria-label={`Move ${joint.name} to`}
-                    disabled={sequenceRunning || !busReady || !joint.calibrated || !joint.online || !positionTrusted || max - min < 1}
+                    disabled={sequenceRunning || !motionReady || !joint.calibrated || !joint.online || !positionTrusted || max - min < 1}
                     value={typed(joint, "goto", joint.degrees ?? null)}
                     onChange={editDraft(joint, "goto")}
                     onKeyDown={(event) => { if (event.key === "Enter") goTo(joint); }}
@@ -2164,7 +2178,7 @@ export function SimpleArm({
                   <i>°</i>
                   <button
                     type="button"
-                    disabled={sequenceRunning || !busReady || !joint.calibrated || !joint.online || !positionTrusted || max - min < 1}
+                    disabled={sequenceRunning || !motionReady || !joint.calibrated || !joint.online || !positionTrusted || max - min < 1}
                     onClick={() => goTo(joint)}
                   >go</button>
                 </label>

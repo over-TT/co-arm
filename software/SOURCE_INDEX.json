@@ -36,6 +36,7 @@
     "deploymentScript": "operations/scripts/deploy-arm-gateway.ps1",
     "gatewayModeScript": "operations/scripts/set-arm-gateway-mode.ps1",
     "recoveryScript": "operations/scripts/restore-arm-pi.ps1",
+    "recoveryArchiveHelper": "operations/scripts/prepare_arm_recovery.py",
     "backupScript": "operations/scripts/backup-arm-pi.ps1",
     "statusScript": "operations/scripts/arm_status.py",
     "firmwareBuildScript": "operations/scripts/compile-firmware.ps1",

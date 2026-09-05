@@ -47,8 +47,11 @@ param(
     [int] $Port = 22,
 
     [Parameter(Mandatory)] [ValidateNotNullOrEmpty()] [string] $TokenFile,
-    [Parameter(Mandatory)] [ValidateNotNullOrEmpty()] [string] $CalibrationFile,
-    [Parameter(Mandatory)] [ValidateNotNullOrEmpty()] [string] $CalibrationProvenanceFile,
+    [string] $CalibrationFile,
+    [string] $CalibrationProvenanceFile,
+    [string] $RecoveryArchivePath,
+    [ValidatePattern('^[0-9a-f]{64}$')] [string] $RecoveryArchiveSha256,
+    [ValidateNotNullOrEmpty()] [string] $PythonExecutable = 'python',
     [Parameter(Mandatory)] [ValidateNotNullOrEmpty()] [string] $ExpectedHostName,
     [Parameter(Mandatory)] [ValidatePattern('^/dev/[A-Za-z0-9._/+:-]+$')] [string] $ExpectedRootDevice,
     [Parameter(Mandatory)] [ValidatePattern('^/dev/[A-Za-z0-9._/+:-]+$')] [string] $ExpectedBootDevice,
@@ -70,6 +73,9 @@ $baseUnitTemplatePath = Join-Path $operationsRoot 'deploy\arm-gateway.service'
 $uartDropInTemplatePath = Join-Path $operationsRoot 'deploy\arm-gateway-physical-uart.conf'
 $wayVncDropInPath = Join-Path $operationsRoot 'deploy\wayvnc-network-online.conf'
 $deployScriptPath = Join-Path $PSScriptRoot 'deploy-arm-gateway.ps1'
+$recoveryHelperPath = Join-Path $PSScriptRoot 'prepare_arm_recovery.py'
+$baseReferenceMarkerPath = $null
+$protectedRecoveryState = $null
 $packageDirectory = Join-Path $softwareRoot 'python\robot_gateway'
 $renderRoot = Join-Path $recoveryRoot 'rendered-deployment'
 $baseUnitPath = Join-Path $renderRoot 'arm-gateway.service'
@@ -96,13 +102,78 @@ if ($HostName -notmatch '^[A-Za-z0-9][A-Za-z0-9.:-]*$' -or $HostName.StartsWith(
 if ($ExpectedHostName -notmatch '^[A-Za-z0-9][A-Za-z0-9.-]*$' -or $ExpectedHostName.StartsWith('-')) {
     throw 'ExpectedHostName must be a plain hostname.'
 }
+function Assert-RecoveryPathAncestry {
+    param([Parameter(Mandatory)] [string] $Path)
+    $cursor = [System.IO.Path]::GetFullPath($Path)
+    while ($null -ne $cursor) {
+        if (Test-Path -LiteralPath $cursor) {
+            $item = Get-Item -LiteralPath $cursor -Force -ErrorAction Stop
+            if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                throw 'Recovery output ancestry cannot use reparse points.'
+            }
+        }
+        $parent = [System.IO.Directory]::GetParent($cursor)
+        $cursor = if ($null -eq $parent) { $null } else { $parent.FullName }
+    }
+}
+
+function Assert-PrivateRecoveryPath {
+    param([Parameter(Mandatory)] [string] $Path)
+
+    Assert-RecoveryPathAncestry -Path $Path
+    $item = Get-Item -LiteralPath $Path -Force -ErrorAction Stop
+    if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+        throw 'Recovery outputs cannot use reparse points.'
+    }
+    $sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
+    $sections = [System.Security.AccessControl.AccessControlSections]::Access -bor
+        [System.Security.AccessControl.AccessControlSections]::Owner
+    if ($Phase -eq 'Prepare') {
+        $security = if ($item.PSIsContainer) {
+            New-Object System.Security.AccessControl.DirectorySecurity
+        } else { New-Object System.Security.AccessControl.FileSecurity }
+        $security.SetAccessRuleProtection($true, $false)
+        $inheritance = if ($item.PSIsContainer) {
+            [System.Security.AccessControl.InheritanceFlags]::ContainerInherit -bor
+            [System.Security.AccessControl.InheritanceFlags]::ObjectInherit
+        } else { [System.Security.AccessControl.InheritanceFlags]::None }
+        $rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+            $sid, [System.Security.AccessControl.FileSystemRights]::FullControl, $inheritance,
+            [System.Security.AccessControl.PropagationFlags]::None,
+            [System.Security.AccessControl.AccessControlType]::Allow)
+        [void]$security.AddAccessRule($rule)
+        if ($item.PSIsContainer) { [System.IO.Directory]::SetAccessControl($item.FullName, $security) }
+        else { [System.IO.File]::SetAccessControl($item.FullName, $security) }
+    }
+    $actual = if ($item.PSIsContainer) { [System.IO.Directory]::GetAccessControl($item.FullName, $sections) }
+        else { [System.IO.File]::GetAccessControl($item.FullName, $sections) }
+    $rules = @($actual.GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier]))
+    if (-not $actual.AreAccessRulesProtected -or $rules.Count -ne 1 -or
+        $rules[0].IdentityReference.Value -cne $sid.Value -or
+        $rules[0].FileSystemRights -ne [System.Security.AccessControl.FileSystemRights]::FullControl -or
+        $rules[0].AccessControlType -ne [System.Security.AccessControl.AccessControlType]::Allow -or
+        $actual.GetOwner([System.Security.Principal.SecurityIdentifier]).Value -cne $sid.Value) {
+        throw 'Recovery output permissions are not owner-only; run laptop-only Prepare to protect them.'
+    }
+}
+
 function Write-RenderedDeploymentFiles {
+    Assert-RecoveryPathAncestry -Path $renderRoot
     foreach ($template in @($baseUnitTemplatePath, $uartDropInTemplatePath)) {
         if (-not (Test-Path -LiteralPath $template -PathType Leaf)) {
             throw "Required deployment template is missing: $template"
         }
     }
-    New-Item -ItemType Directory -Force -Path $renderRoot | Out-Null
+    if ($Phase -eq 'Prepare') {
+        [void][System.IO.Directory]::CreateDirectory($recoveryRoot)
+        Assert-PrivateRecoveryPath -Path $recoveryRoot
+        [void][System.IO.Directory]::CreateDirectory($renderRoot)
+    }
+    elseif (-not (Test-Path -LiteralPath $renderRoot -PathType Container)) {
+        throw 'Rendered recovery inputs are absent; run laptop-only Prepare first.'
+    }
+    Assert-PrivateRecoveryPath -Path $recoveryRoot
+    Assert-PrivateRecoveryPath -Path $renderRoot
     $unit = Get-Content -Raw -LiteralPath $baseUnitTemplatePath
     $unit = $unit.Replace('__SERVICE_USER__', $UserName)
     $unit = $unit.Replace('__SERVICE_GROUP__', $ServiceGroup)
@@ -115,8 +186,17 @@ function Write-RenderedDeploymentFiles {
         }
     }
     $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
-    [System.IO.File]::WriteAllText($baseUnitPath, $unit, $utf8NoBom)
-    [System.IO.File]::WriteAllText($uartDropInPath, $dropIn, $utf8NoBom)
+    foreach ($entry in @(@($baseUnitPath, $unit), @($uartDropInPath, $dropIn))) {
+        if ($Phase -eq 'Prepare') {
+            if (Test-Path -LiteralPath $entry[0]) { Assert-PrivateRecoveryPath -Path $entry[0] }
+            [System.IO.File]::WriteAllText($entry[0], $entry[1], $utf8NoBom)
+        }
+        elseif (-not (Test-Path -LiteralPath $entry[0] -PathType Leaf) -or
+            [System.IO.File]::ReadAllText($entry[0]) -cne $entry[1]) {
+            throw 'Rendered recovery inputs changed; run laptop-only Prepare first.'
+        }
+        Assert-PrivateRecoveryPath -Path $entry[0]
+    }
 }
 
 Write-RenderedDeploymentFiles
@@ -238,7 +318,7 @@ function Assert-RecoveredCalibrationProvenance {
     )
 
     $provenance = Get-Content -Raw -LiteralPath $ProvenancePath | ConvertFrom-Json
-    if ([string]$provenance.schema -ne 'arm-joints-recovery-provenance.v1') {
+    if ([string]$provenance.schema -ne 'arm-joints-recovery-provenance.v2') {
         throw 'Recovered calibration provenance has an unexpected schema.'
     }
     if ($null -eq $provenance.artifact -or $null -eq $provenance.artifact.sha256) {
@@ -255,10 +335,43 @@ function Assert-RecoveredCalibrationProvenance {
     if ([int]$provenance.artifact.jointCount -ne 4) {
         throw 'Recovered calibration provenance does not describe four joints.'
     }
+    if ([string]$provenance.recovery.sourceKind -cne 'verified-protected-pi-backup' -or
+        [string]$provenance.recovery.sourceArchiveSha256 -cne $RecoveryArchiveSha256 -or
+        [string]$provenance.recovery.sourceMemberPath -cne 'var/lib/arm-gateway/arm-joints.json' -or
+        [string]$provenance.recovery.sourceMemberSha256 -cne $actual -or
+        $provenance.recovery.baseContinuityClaimed -ne $false -or
+        $provenance.recovery.physicalBaseRezeroRequired -ne $true) {
+        throw 'Calibration provenance must bind the verified archive and require physical Base re-zero.'
+    }
+}
+
+function Initialize-ArchiveRecovery {
+    if ([string]::IsNullOrWhiteSpace($RecoveryArchivePath) -or
+        [string]::IsNullOrWhiteSpace($RecoveryArchiveSha256)) {
+        throw "$Phase requires exact -RecoveryArchivePath and -RecoveryArchiveSha256 values."
+    }
+    Resolve-RequiredFile -Path $recoveryHelperPath | Out-Null
+    $python = (Get-Command $PythonExecutable -CommandType Application -ErrorAction Stop |
+        Select-Object -First 1).Source
+    $arguments = @(
+        $recoveryHelperPath, '--archive', $RecoveryArchivePath,
+        '--sha256', $RecoveryArchiveSha256, '--output-root', $recoveryRoot,
+        '--expected-host', $ExpectedHostName, '--expected-user', $UserName
+    )
+    if ($Phase -eq 'Prepare') { $arguments += '--create' }
+    if ($CalibrationFile) { $arguments += @('--calibration', $CalibrationFile) }
+    if ($CalibrationProvenanceFile) { $arguments += @('--provenance', $CalibrationProvenanceFile) }
+    $result = & $python @arguments
+    if ($LASTEXITCODE -ne 0) { throw 'Protected archive recovery preparation failed.' }
+    $script:protectedRecoveryState = ($result -join "`n") | ConvertFrom-Json
+    $script:CalibrationFile = [string]$protectedRecoveryState.calibrationPath
+    $script:CalibrationProvenanceFile = [string]$protectedRecoveryState.provenancePath
+    $script:baseReferenceMarkerPath = [string]$protectedRecoveryState.baseReferenceMarkerPath
 }
 
 function Get-RecoveryInputs {
     $pythonFiles = @(Get-ReviewedGatewayPythonFiles)
+    Initialize-ArchiveRecovery
 
     $required = @(
         $requirementsPath,
@@ -268,7 +381,9 @@ function Get-RecoveryInputs {
         $deployScriptPath,
         $TokenFile,
         $CalibrationFile,
-        $CalibrationProvenanceFile
+        $CalibrationProvenanceFile,
+        $baseReferenceMarkerPath,
+        $recoveryHelperPath
     )
     foreach ($path in $required) {
         Resolve-RequiredFile -Path $path | Out-Null
@@ -288,25 +403,32 @@ function Get-RecoveryInputs {
         $wayVncDropInPath,
         $deployScriptPath,
         $CalibrationFile,
-        $CalibrationProvenanceFile
+        $CalibrationProvenanceFile,
+        $baseReferenceMarkerPath,
+        $recoveryHelperPath,
+        $PSCommandPath
     )
 }
 
 function New-RemoteDigestContract {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('Bootstrap', 'Activate', 'Deactivate', 'Verify')]
+        [ValidateSet('Bootstrap', 'ActivatePreflight', 'Activate', 'Deactivate', 'Verify')]
         [string] $Scope,
 
         [string] $ManifestPath
     )
 
     $entries = @()
-    if ($Scope -ne 'Activate') {
+    if ($Scope -in @('Bootstrap', 'ActivatePreflight', 'Activate', 'Deactivate', 'Verify')) {
         if ([string]::IsNullOrWhiteSpace($ManifestPath)) {
             throw "A freshly prepared recovery manifest is required for the $Scope digest contract."
         }
         $resolvedManifestPath = Resolve-RequiredFile -Path $ManifestPath
+        if ((Get-Sha256Lower -Path $resolvedManifestPath) -cne $script:preparedManifestSha256) {
+            throw 'The prepared recovery manifest changed before digest-contract creation.'
+        }
+        $prepared = Get-Content -Raw -LiteralPath $resolvedManifestPath | ConvertFrom-Json
         $pythonFiles = @(Get-ReviewedGatewayPythonFiles)
         foreach ($source in $pythonFiles) {
             $entries += [pscustomobject]@{
@@ -336,6 +458,12 @@ function New-RemoteDigestContract {
         }
         $entries += [pscustomobject]@{
             Mode = 'required'
+            Source = $baseReferenceMarkerPath
+            Remote = '/var/lib/arm-gateway/base-reference-required.json'
+            Label = 'base-reference-required'
+        }
+        $entries += [pscustomobject]@{
+            Mode = 'required'
             Source = $baseUnitPath
             Remote = '/etc/systemd/system/arm-gateway.service'
             Label = 'arm-gateway-service'
@@ -359,7 +487,7 @@ function New-RemoteDigestContract {
             Label = 'recovery-manifest'
         }
     }
-    if ($Scope -in @('Activate', 'Deactivate', 'Verify')) {
+    if ($Scope -in @('ActivatePreflight', 'Activate', 'Deactivate', 'Verify')) {
         $entries += [pscustomobject]@{
             Mode = if ($Scope -in @('Activate', 'Deactivate')) { 'required' } else { 'optional' }
             Source = $uartDropInPath
@@ -370,7 +498,19 @@ function New-RemoteDigestContract {
 
     $rows = foreach ($entry in $entries) {
         $sourcePath = Resolve-RequiredFile -Path $entry.Source
-        $digest = Get-Sha256Lower -Path $sourcePath
+        if ($entry.Label -eq 'recovery-manifest') { $digest = $script:preparedManifestSha256 }
+        elseif ($entry.Label -eq 'gateway-token') { $digest = [string]$prepared.privateToken.sha256 }
+        else {
+            $relative = try { [System.IO.Path]::GetRelativePath($softwareRoot, $sourcePath) }
+                catch { $sourcePath }
+            $key = $relative.Replace('\', '/')
+            $preparedRows = @($prepared.inputs | Where-Object { [string]$_.path -ceq $key })
+            if ($preparedRows.Count -ne 1) { throw 'Digest input is missing from the prepared manifest.' }
+            $digest = [string]$preparedRows[0].sha256
+        }
+        if ($digest -notmatch '^[0-9a-f]{64}$' -or (Get-Sha256Lower -Path $sourcePath) -cne $digest) {
+            throw 'Recovery input changed after the prepared manifest was validated.'
+        }
         "$($entry.Mode)`t$digest`t$($entry.Remote)`t$($entry.Label)"
     }
     $temporaryPath = Join-Path $env:TEMP (
@@ -407,7 +547,7 @@ function New-RecoveryManifest {
     }
     $tokenItem = Get-Item -LiteralPath $TokenFile
     $manifest = [ordered]@{
-        schema = 'arm-pi-recovery-kit.v2'
+        schema = 'arm-pi-recovery-kit.v3'
         generatedUtc = $generated.ToString('o')
         expectedHost = $HostName
         sshPort = $Port
@@ -428,6 +568,13 @@ function New-RecoveryManifest {
             sha256 = Get-Sha256Lower -Path $tokenItem.FullName
             copiedIntoManifest = $false
         }
+        calibrationRecovery = [ordered]@{
+            sourceArchiveSha256 = $RecoveryArchiveSha256
+            calibrationSha256 = Get-Sha256Lower -Path $CalibrationFile
+            baseReferenceMarkerSha256 = Get-Sha256Lower -Path $baseReferenceMarkerPath
+            baseContinuityClaimed = $false
+            physicalBaseRezeroRequired = $true
+        }
         inputs = @($rows)
         phases = @(
             'Bootstrap restores the dormant gateway, token, calibration, and WayVNC ordering.',
@@ -439,13 +586,15 @@ function New-RecoveryManifest {
     }
 
     $stamp = $generated.ToString('yyyyMMddTHHmmssZ')
-    $manifestPath = Join-Path $recoveryRoot "prepared-$stamp.json"
+    $manifestPath = Join-Path $recoveryRoot ("prepared-$stamp-" + [Guid]::NewGuid().ToString('N') + '.json')
     $encoded = $manifest | ConvertTo-Json -Depth 8
     [System.IO.File]::WriteAllText(
         $manifestPath,
         $encoded + [Environment]::NewLine,
         [System.Text.UTF8Encoding]::new($false)
     )
+    $script:preparedManifestSha256 = Get-Sha256Lower -Path $manifestPath
+    Assert-PrivateRecoveryPath -Path $manifestPath
     $latestPath = Join-Path $recoveryRoot 'LATEST.json'
     $temporaryLatest = Join-Path $recoveryRoot ('.LATEST-' + [Guid]::NewGuid().ToString('N') + '.json')
     [System.IO.File]::WriteAllText(
@@ -454,6 +603,7 @@ function New-RecoveryManifest {
         [System.Text.UTF8Encoding]::new($false)
     )
     Move-Item -LiteralPath $temporaryLatest -Destination $latestPath -Force
+    Assert-PrivateRecoveryPath -Path $latestPath
     return $manifestPath
 }
 
@@ -461,6 +611,7 @@ function Resolve-PreparedRecoveryManifest {
     param([Parameter(Mandatory)] [string] $Path)
 
     $resolved = Resolve-RequiredFile -Path $Path
+    Assert-PrivateRecoveryPath -Path $resolved
     try {
         $strictUtf8 = [System.Text.UTF8Encoding]::new($false, $true)
         $document = [System.IO.File]::ReadAllText($resolved, $strictUtf8) | ConvertFrom-Json
@@ -468,7 +619,7 @@ function Resolve-PreparedRecoveryManifest {
     catch {
         throw "The prepared recovery manifest is not valid UTF-8 JSON: $resolved"
     }
-    if ([string]$document.schema -ne 'arm-pi-recovery-kit.v2') {
+    if ([string]$document.schema -ne 'arm-pi-recovery-kit.v3') {
         throw 'The prepared recovery manifest has an unexpected schema.'
     }
     if ([string]$document.expectedHost -cne $HostName -or
@@ -489,8 +640,17 @@ function Resolve-PreparedRecoveryManifest {
         throw 'The prepared recovery manifest has an unexpected controller contract.'
     }
     if ($null -eq $document.privateToken -or
-        $document.privateToken.copiedIntoManifest -ne $false) {
+        $document.privateToken.copiedIntoManifest -ne $false -or
+        [string]$document.privateToken.sha256 -cne (Get-Sha256Lower -Path $TokenFile) -or
+        [long]$document.privateToken.bytes -ne (Get-Item -LiteralPath $TokenFile).Length) {
         throw 'The prepared recovery manifest does not preserve the private-token boundary.'
+    }
+    if ([string]$document.calibrationRecovery.sourceArchiveSha256 -cne $RecoveryArchiveSha256 -or
+        [string]$document.calibrationRecovery.calibrationSha256 -cne (Get-Sha256Lower -Path $CalibrationFile) -or
+        [string]$document.calibrationRecovery.baseReferenceMarkerSha256 -cne (Get-Sha256Lower -Path $baseReferenceMarkerPath) -or
+        $document.calibrationRecovery.baseContinuityClaimed -ne $false -or
+        $document.calibrationRecovery.physicalBaseRezeroRequired -ne $true) {
+        throw 'The prepared recovery manifest does not preserve the fail-closed Base-reference policy.'
     }
     $generated = [DateTimeOffset]::MinValue
     if (-not [DateTimeOffset]::TryParse(
@@ -502,16 +662,36 @@ function Resolve-PreparedRecoveryManifest {
         throw 'The prepared recovery manifest has an invalid generatedUtc value.'
     }
     $inputs = @($document.inputs)
-    if ($inputs.Count -eq 0) {
-        throw 'The prepared recovery manifest has no input digest rows.'
+    $currentInputs = @($script:inputs)
+    if ($inputs.Count -ne $currentInputs.Count) {
+        throw 'The prepared recovery manifest does not contain the complete current input set.'
     }
+    $expectedPaths = @{}
+    foreach ($inputPath in $currentInputs) {
+        $item = Get-Item -LiteralPath $inputPath
+        $relative = try { [System.IO.Path]::GetRelativePath($softwareRoot, $item.FullName) }
+            catch { $item.FullName }
+        $expectedPaths[$relative.Replace('\', '/')] = $item
+    }
+    $seen = @{}
     foreach ($inputRow in $inputs) {
         if ([string]::IsNullOrWhiteSpace([string]$inputRow.path) -or
             [long]$inputRow.bytes -lt 0 -or
             [string]$inputRow.sha256 -notmatch '^[0-9a-f]{64}$') {
             throw 'The prepared recovery manifest contains an invalid input digest row.'
         }
+        $key = [string]$inputRow.path
+        if ($seen.ContainsKey($key) -or -not $expectedPaths.ContainsKey($key)) {
+            throw 'The prepared recovery manifest has duplicate or unexpected input paths.'
+        }
+        $seen[$key] = $true
+        $current = $expectedPaths[$key]
+        if ([long]$inputRow.bytes -ne $current.Length -or
+            [string]$inputRow.sha256 -cne (Get-Sha256Lower -Path $current.FullName)) {
+            throw 'The prepared recovery manifest is stale for current recovery inputs.'
+        }
     }
+    $script:preparedManifestSha256 = Get-Sha256Lower -Path $resolved
     return $resolved
 }
 
@@ -706,6 +886,8 @@ def failures(state):
         problems.append("STOP is not latched")
     if state.get("operatorInspectionRequired") is not True:
         problems.append("operator inspection latch is absent")
+    if state.get("baseReferenceRequired") is not True:
+        problems.append("recovered Base-reference gate is absent")
     if state.get("safetyStopReason") not in acceptable_reasons:
         problems.append("safety latch reason is not accepted")
     if state.get("held") != []:
@@ -829,6 +1011,7 @@ mkdir -- "$stage"
         Copy-ToRemoteStage -Context $Context -Source $TokenFile -RemotePath "$stage/arm-pi.token"
         Copy-ToRemoteStage -Context $Context -Source $CalibrationFile -RemotePath "$stage/arm-joints.json"
         Copy-ToRemoteStage -Context $Context -Source $CalibrationProvenanceFile -RemotePath "$stage/arm-joints.provenance.json"
+        Copy-ToRemoteStage -Context $Context -Source $baseReferenceMarkerPath -RemotePath "$stage/base-reference-required.json"
         Copy-ToRemoteStage -Context $Context -Source $wayVncDropInPath -RemotePath "$stage/wayvnc-network-online.conf"
         Copy-ToRemoteStage -Context $Context -Source $ManifestPath -RemotePath "$stage/recovery-manifest.json"
         Copy-ToRemoteStage -Context $Context -Source $digestContractPath -RemotePath "$stage/expected-digests.tsv"
@@ -873,6 +1056,29 @@ if ! systemctl cat wayvnc.service >/dev/null 2>&1; then
 fi
 sudo systemctl stop arm-gateway.service
 sudo install -d -m 0700 -o "$service_user" -g "$service_group" /var/lib/arm-gateway
+sudo install -m 0600 -o "$service_user" -g "$service_group" "$stage/base-reference-required.json" /var/lib/arm-gateway/base-reference-required.json
+marker_expected=$(awk -F '\t' '$4 == "base-reference-required" {print $2}' "$stage/expected-digests.tsv")
+sudo python3 - "$marker_expected" <<'PY_BASE_GATE_DURABLE'
+import hashlib
+import os
+from pathlib import Path
+import stat
+import sys
+
+marker = Path('/var/lib/arm-gateway/base-reference-required.json')
+if not stat.S_ISREG(marker.lstat().st_mode):
+    raise SystemExit('Base-reference marker is not a regular file')
+with marker.open('rb') as source:
+    if hashlib.sha256(source.read()).hexdigest() != sys.argv[1]:
+        raise SystemExit('Base-reference marker differs from the prepared digest')
+    os.fsync(source.fileno())
+directory = os.open(marker.parent, os.O_RDONLY)
+try:
+    os.fsync(directory)
+finally:
+    os.close(directory)
+PY_BASE_GATE_DURABLE
+# Only replace calibration after its recovery gate is durable on disk.
 sudo install -m 0600 -o "$service_user" -g "$service_group" "$stage/arm-joints.json" /var/lib/arm-gateway/arm-joints.json
 sudo install -m 0600 -o "$service_user" -g "$service_group" "$stage/arm-joints.provenance.json" /var/lib/arm-gateway/arm-joints.recovery-provenance.json
 sudo install -m 0600 -o "$service_user" -g "$service_group" "$stage/recovery-manifest.json" /var/lib/arm-gateway/recovery-manifest.json
@@ -962,10 +1168,11 @@ echo 'UART boot configuration is ready. A deliberate reboot is required; none wa
 }
 
 function Invoke-Activate {
-    param([Parameter(Mandatory)] $Context)
+    param([Parameter(Mandatory)] $Context, [Parameter(Mandatory)] [string] $ManifestPath)
     Assert-ReplacementSdBoot -Context $Context
     $stage = '/tmp/arm-pi-uart-' + [Guid]::NewGuid().ToString('N')
-    $digestContractPath = New-RemoteDigestContract -Scope Activate
+    $digestContractPath = New-RemoteDigestContract -Scope Activate -ManifestPath $ManifestPath
+    $preflightDigestContractPath = New-RemoteDigestContract -Scope ActivatePreflight -ManifestPath $ManifestPath
     $expectedDropInSha256 = Get-Sha256Lower -Path $uartDropInPath
     $stagePrepared = $false
     try {
@@ -980,7 +1187,8 @@ mkdir -- "$stage"
         Invoke-RemoteScript -Context $Context -ScriptText $prepare -Operation 'UART staging' -Arguments @($stage)
         $stagePrepared = $true
         Copy-ToRemoteStage -Context $Context -Source $uartDropInPath -RemotePath "$stage/20-arm-controller-uart.conf"
-        Copy-ToRemoteStage -Context $Context -Source $digestContractPath -RemotePath "$stage/expected-digests.tsv"
+        Copy-ToRemoteStage -Context $Context -Source $preflightDigestContractPath -RemotePath "$stage/expected-digests.tsv"
+        Invoke-RemoteDigestCheck -Context $Context -Stage $stage -Operation 'Pre-activation full prepared-install integrity verification'
         $script = @'
 set -eu
 stage=$1
@@ -1143,6 +1351,7 @@ exit 4
             -ScriptText $script `
             -Operation 'Physical UART activation' `
             -Arguments @($stage, $UserName, $ServiceGroup, $expectedDropInSha256)
+        Copy-ToRemoteStage -Context $Context -Source $digestContractPath -RemotePath "$stage/expected-digests.tsv"
         Invoke-RemoteDigestCheck `
             -Context $Context `
             -Stage $stage `
@@ -1172,6 +1381,9 @@ sudo find "$stage" -depth -type d -empty -delete 2>/dev/null || true
         }
         if (Test-Path -LiteralPath $digestContractPath) {
             Remove-Item -LiteralPath $digestContractPath -Force
+        }
+        if (Test-Path -LiteralPath $preflightDigestContractPath) {
+            Remove-Item -LiteralPath $preflightDigestContractPath -Force
         }
     }
 }
@@ -1546,7 +1758,7 @@ sudo find "$stage" -depth -type d -empty -delete 2>/dev/null || true
 }
 
 $inputs = Get-RecoveryInputs
-if ($Phase -in @('Prepare', 'Bootstrap')) {
+if ($Phase -eq 'Prepare') {
     $manifestPath = New-RecoveryManifest -Inputs $inputs
     Write-Host "Prepared private recovery manifest: $manifestPath"
 }
@@ -1576,7 +1788,7 @@ try {
         }
         'Activate' {
             if ($PSCmdlet.ShouldProcess($HostName, 'Install the reviewed physical UART drop-in and restart the gateway once')) {
-                Invoke-Activate -Context $context
+                Invoke-Activate -Context $context -ManifestPath $manifestPath
             }
         }
         'Deactivate' {

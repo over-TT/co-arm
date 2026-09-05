@@ -1,4 +1,4 @@
-# Release review — 2026-09-04
+# Release review — updated 2026-09-05
 
 The first release should describe a working four-axis camera-arm prototype,
 with source and printable parts. It is not yet a complete copy-and-build kit.
@@ -11,6 +11,17 @@ formal security certification or a new physical-arm acceptance test.
 
 ## Fixed in this candidate
 
+- Live Follow recovers correctly from React StrictMode's development effect
+  replay, which previously left it waiting permanently for telemetry. A
+  lifecycle regression covers telemetry, start, and end. Physical Live behavior
+  still needs a fresh test on the exact installed stack.
+- Recovery now has a separate Base-reference gate, dashboard/MCP reporting,
+  explicit zero confirmation, durable calibration readback, and final-dispatch
+  checks. Disk failures and a gate appearing during hold cannot unlock motion.
+- Fresh backups permit absent historical recovery metadata and record whether
+  older provenance matches the frozen calibration. Portable Prepare verifies a
+  protected archive and creates archive-bound provenance plus the Base gate;
+  it does not assert physical continuity or silently trust an older hash.
 - Camera arrival and goal pursuit now use the reviewed 6-degree / 17-tick
   tolerance. Base, Shoulder, and Elbow retain their 1-degree checks; the
   shutter-time pose-drift check also stays at 1 degree.
@@ -32,10 +43,10 @@ See [Status](STATUS.md) for the exact verification results and their limits.
 
 ## Remaining release blockers
 
-### 1. Recovery needs a coordinated fix
+### 1. Recovery still needs device round-trip acceptance
 
-The portable operations scripts do not yet form a proven backup-to-restore
-round trip. Three source-level findings need to be addressed together:
+The following source-level findings are addressed by local regressions. They
+are not a claim that a replacement Pi has been restored successfully:
 
 1. **Restored Base calibration can be paired with the wrong valid frame.**
    Bootstrap restores the archived `rawZero`. The gateway can adopt a HAT
@@ -44,20 +55,23 @@ round trip. Three source-level findings need to be addressed together:
    after the snapshot and the HAT remains powered, clearing the generic STOP
    latch can expose mismatched calibration as trusted. A true cold HAT/servo
    continuity loss still blocks Base; this finding is not a claim that every
-   restore immediately permits motion.
+   restore immediately permits motion. The new independent gate hides Base
+   truth and blocks motion until explicit re-zero and durable readback succeed.
 2. **A verified archive may contain stale calibration provenance.** Normal
    calibration changes the calibration JSON without refreshing the older
    recovery-provenance hash. Backup can preserve both while restore rejects
-   that pair. Archive integrity alone does not prove restore compatibility.
+   that pair. Prepare now derives fresh provenance from the verified archive's
+   actual frozen calibration; any separately supplied pair must match exactly.
 3. **Fresh installs lack required recovery metadata.** Backup requires files
    created by the restore workflow, not by ordinary initial deployment. The
-   script also takes separately prepared inputs rather than an archive.
+   script also took separately prepared inputs rather than an archive. Old
+   metadata is now optional; protected archive input is required for restore.
 
 Relevant implementation: [restore script](../software/operations/scripts/restore-arm-pi.ps1),
 [backup script](../software/operations/scripts/backup-arm-pi.ps1), and
 [calibration/Base state](../software/python/robot_gateway/simple_arm_api.py).
 
-Acceptance: exercise fresh deployment, calibration change, snapshot, archive
+Remaining device acceptance: exercise fresh deployment, calibration change, snapshot, archive
 input conversion, dormant restore, retained-valid HAT frame, cold HAT frame,
 explicit physical re-zero, and verified post-change snapshot. The restored
 Base must remain untrusted until the new reference is confirmed. Include
@@ -88,7 +102,7 @@ the rendered documentation before changing visibility or tagging a release.
 
 ## Recommended next scope
 
-1. Close the recovery findings and add the round-trip regressions.
+1. Complete the physical recovery round trip using the tested source candidate.
 2. Make one inspection demo repeatable: request a viewpoint, preview, measured
    arrival, and a camera image that visibly answers the request. Record several
    attempts and report the actual successes/failures instead of a broad

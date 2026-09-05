@@ -11,6 +11,22 @@ import pytest
 from arm_mcp import server
 
 
+@pytest.mark.parametrize("reason", [
+    "RECOVERY_ARCHIVE_BASE_FRAME_UNTRUSTED",
+    "BASE_REFERENCE_MARKER_INVALID",
+    "untrusted marker content",
+    None,
+])
+def test_compact_state_retains_bounded_recovery_gate(reason: str | None) -> None:
+    result = server._state_report({"baseReferenceRequired": True, "baseReferenceReason": reason})
+    assert result["baseReferenceRequired"] is True
+    assert result["baseReferenceReason"] == (
+        "RECOVERY_ARCHIVE_BASE_FRAME_UNTRUSTED"
+        if reason == "RECOVERY_ARCHIVE_BASE_FRAME_UNTRUSTED"
+        else "BASE_REFERENCE_MARKER_INVALID"
+    )
+
+
 def _module3_wide_profile(*, simulated: bool = False) -> dict[str, object]:
     profile: dict[str, object] = {
         "id": "module3-wide",

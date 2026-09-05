@@ -484,10 +484,21 @@ def _pose(state: dict[str, Any]) -> list[dict[str, Any]]:
 
 def _state_report(state: dict[str, Any]) -> dict[str, Any]:
     floor_guard = state.get("floorGuard") if isinstance(state.get("floorGuard"), dict) else {}
+    base_reference_required = state.get("baseReferenceRequired") is True
+    base_reference_reason = state.get("baseReferenceReason")
+    if base_reference_reason not in {
+        "RECOVERY_ARCHIVE_BASE_FRAME_UNTRUSTED",
+        "BASE_REFERENCE_MARKER_INVALID",
+    }:
+        base_reference_reason = (
+            "BASE_REFERENCE_MARKER_INVALID" if base_reference_required else None
+        )
     return {
         "connection": state.get("connection"),
         "bus": state.get("bus"),
         "stopped": state.get("stopped"),
+        "baseReferenceRequired": base_reference_required,
+        "baseReferenceReason": base_reference_reason,
         "collisionSuspected": state.get("collisionSuspected"),
         "floorGuard": floor_guard,
         "joints": _pose(state),

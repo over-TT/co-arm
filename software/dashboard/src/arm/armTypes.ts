@@ -365,6 +365,13 @@ export interface SimpleArmState {
   joints: SimpleJoint[];
   held: number[];
   stopped: boolean;
+  /** Independent recovery-image motion gate. Clear STOP cannot retire it. */
+  baseReferenceRequired?: boolean;
+  /** Gateway-bounded reason; arbitrary marker content is normalized to invalid. */
+  baseReferenceReason?:
+    | "RECOVERY_ARCHIVE_BASE_FRAME_UNTRUSTED"
+    | "BASE_REFERENCE_MARKER_INVALID"
+    | null;
   /** Wire time of the last telemetry refresh; makes a saturated link visible. */
   refreshMs?: number;
   telemetryGeneration?: number;
@@ -561,6 +568,8 @@ export interface SimpleCalibratePatch {
    *  browser's rawPosition is up to a poll and a refresh stale, which on the
    *  camera servo is tens of degrees. */
   here?: Array<"rawZero" | "rawMin" | "rawMax">;
+  /** Current acknowledgement from the operator's explicit Set zero here action. */
+  confirmedPhysicalBaseZero?: true;
 }
 
 export interface PhysicalProfileEnvelope {

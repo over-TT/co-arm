@@ -442,10 +442,11 @@ After deployment, verify separately:
 
 ### 7.1 Keep every Pi mutation recoverable
 
-**Release blocker:** the exported backup/restore path is incomplete and has
-not passed a full round-trip recovery test. Do not use `restore-arm-pi.ps1`
-for physical recovery until the scripts and gateway are fixed together and
-that test passes. The [release review](RELEASE_REVIEW.md) records the findings.
+**Device acceptance is still a release blocker.** The archive preparation,
+provenance, and Base-reference guards now have local regression coverage, but
+no complete replacement-Pi recovery was performed for this candidate. Treat
+physical restore as supervised validation, not a proven disaster-recovery kit.
+The [release review](RELEASE_REVIEW.md) records the remaining proof.
 
 The checkout is the reusable source of truth. Do not edit an ordinary gateway
 module only on the Pi. Before a reachable persistent Pi change, take a protected
@@ -481,20 +482,56 @@ identity and must only rebuild that same Pi. Another person's Pi starts from
 the reviewed source and creates its own credentials, commissioning evidence,
 and protected snapshot history.
 
-A passing archive/hash check proves the saved bytes, not a restorable kit:
+A fresh deployment does not need old restore metadata to create a backup.
+When older calibration provenance exists, backup preserves its bytes and
+records whether its hash is current, stale, malformed, or absent. It does not
+rewrite that history as a new physical attestation.
 
-- A fresh deployment lacks the recovery manifest and calibration provenance
-  that the backup script requires.
-- Calibration changes can leave the saved provenance hash stale. Restore
-  accepts separate token/calibration/provenance files, not the backup archive,
-  and rejects that mismatched pair.
-- Restore must invalidate the saved Base reference until explicit physical
-  re-zeroing. The export does not enforce this when an already-valid HAT frame
-  survives recovery; clearing the generic STOP latch is insufficient.
+Prepare restore inputs locally, using the SHA-256 retained when the same Pi's
+protected archive was verified. Recomputing a checksum from an untrusted file
+does not authenticate its origin. This phase does not contact the Pi:
 
-Do not fabricate provenance or clear STOP to work around these gaps. Keep
-existing protected archives; the fix needs a tested conversion from snapshot
-to restore inputs and a separate, enforced Base-reference gate.
+```powershell
+$piRestore = @{
+  HostName = "<pi-host-or-address>"
+  Port = $sshPort
+  UserName = "<pi-service-user>"
+  ServiceGroup = "<pi-service-group>"
+  IdentityFile = $identityFile
+  KnownHostsFile = $knownHostsFile
+  TokenFile = "<protected-token-file-for-this-pi>"
+  ExpectedHostName = "<exact-pi-hostname>"
+  ExpectedRootDevice = "<exact-replacement-root-device>"
+  ExpectedBootDevice = "<exact-replacement-boot-device>"
+  ExpectedControllerId = "<verified-controller-id>"
+  ExpectedFirmwareVersion = "<verified-firmware-version>"
+  DirectLanAddressCidr = "<expected-address/cidr>"
+  RecoveryArchivePath = "<protected-backup.tar.gz>"
+  RecoveryArchiveSha256 = "<retained-lowercase-64-character-sha256>"
+  PythonExecutable = "<python-3.11-or-newer-executable>"
+}
+.\software\operations\scripts\restore-arm-pi.ps1 -Phase Prepare @piRestore
+```
+
+The helper reads the frozen calibration without extracting an arbitrary
+archive tree. It checks archive/member integrity and the recorded hostname and service user,
+then generates archive-bound provenance and an independent Base-reference
+marker under the protected ignored recovery directory. Normally omit both
+`CalibrationFile` and `CalibrationProvenanceFile`; if supplied, they must match
+the selected archive exactly. Archived stale provenance is historical data,
+not a reason to fabricate a replacement attestation.
+
+Later phases reuse the prepared manifest and refuse changed source, token,
+calibration, or marker inputs. Bootstrap installs the Base marker before the
+gateway resumes. Clear STOP does not remove it: place Base on its physical
+zero mark and use the explicit **Set zero here** action. Verified homing,
+durable calibration readback, and marker removal are all required to unlock
+motion; malformed recovery state must be repaired first.
+
+`Verify` checks the prepared, pre-commissioning recovery state. After re-zero,
+the calibration and marker deliberately change: create and verify a new
+protected backup instead of expecting the old recovery manifest to match.
+Archive integrity and local tests still do not establish a physical round trip.
 
 ## 8. Connect the laptop to REAL
 

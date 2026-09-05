@@ -9,8 +9,8 @@
     },
     {
       "path": "software/SOURCE_INDEX.json",
-      "bytes": 3305,
-      "sha256": "d3136b1df9c0969c809b958b68c5622e2753274b7bf9dd26eaace8998eaea77a"
+      "bytes": 3380,
+      "sha256": "efebf16827c1bd7aa08b047ed014a805ec88ea0217b9f4ba3432a0fc1c7a6d28"
     },
     {
       "path": "software/dashboard/README.md",
@@ -64,13 +64,13 @@
     },
     {
       "path": "software/dashboard/src/arm/ArmLiveFollow.test.tsx",
-      "bytes": 56474,
-      "sha256": "12f42d7a823db729bf4001d265330df0b78cfb2f8fdf6fab39c844b12f573edd"
+      "bytes": 58534,
+      "sha256": "b8df3de891e96eb64a0d9cdaacd2c50cb0bca987b5c51b2dbc0fe641c5b00470"
     },
     {
       "path": "software/dashboard/src/arm/ArmLiveFollow.tsx",
-      "bytes": 57592,
-      "sha256": "625fa2c22dd7f346209ce3731639500282f602e0c4577d502e4666cdfde0b73a"
+      "bytes": 57992,
+      "sha256": "3ab296c87c344e0c0e6bf0a79208e6f8a454d83756088b7ccb4ac7fe7a52a5e5"
     },
     {
       "path": "software/dashboard/src/arm/ArmViewport.test.tsx",
@@ -84,13 +84,13 @@
     },
     {
       "path": "software/dashboard/src/arm/SimpleArm.test.tsx",
-      "bytes": 114525,
-      "sha256": "ee2edf244e0f575b7b1028857b8ba29f2d63c5e56eb0d12d0c7415d4ac74e17d"
+      "bytes": 116747,
+      "sha256": "6ff420cb35feb002e1229141e3691fe7233e0fe79e6ee6999122c10cef0c5e8f"
     },
     {
       "path": "software/dashboard/src/arm/SimpleArm.tsx",
-      "bytes": 108580,
-      "sha256": "047cce34513fcfb6815c3b7db912c3aa1d7f35394c0ac821dbccecaa93196d1d"
+      "bytes": 109474,
+      "sha256": "f66db8ff253cc650164a8ab026931d97597af20acf0c371fed1b58617883e9bd"
     },
     {
       "path": "software/dashboard/src/arm/arm-2d.css",
@@ -139,8 +139,8 @@
     },
     {
       "path": "software/dashboard/src/arm/armTypes.ts",
-      "bytes": 22456,
-      "sha256": "a8a2a1c473e1143a11f49b2bbe3e49e94cc442a16ee61167b1fc5d4f22da04f8"
+      "bytes": 22893,
+      "sha256": "90ae2c90aba7b9d72d3b37231c1d7e237dc71f93fb74f955fd312fbd66d57f5c"
     },
     {
       "path": "software/dashboard/src/arm/simple-arm.css",
@@ -289,8 +289,8 @@
     },
     {
       "path": "software/operations/scripts/backup-arm-pi.ps1",
-      "bytes": 32257,
-      "sha256": "60d0844519951ba84ce09fbd3f968ae8f4e30ecab51b683d8458756cc15b6b58"
+      "bytes": 34129,
+      "sha256": "b402005ad74949cd7db246e3294a30a83b7f5b239edfb9540aa19a5c41cafef5"
     },
     {
       "path": "software/operations/scripts/compile-firmware.ps1",
@@ -308,9 +308,14 @@
       "sha256": "bb5c80d14242c78a093a6eb818e05cf6a9a9d50b9f2a0c2d6ac5a5be88f033b3"
     },
     {
+      "path": "software/operations/scripts/prepare_arm_recovery.py",
+      "bytes": 17362,
+      "sha256": "d03bfa58f8fd97e8b893b2c4ed290a1e99134fe3626e42c89c617f6c8c60cf5e"
+    },
+    {
       "path": "software/operations/scripts/restore-arm-pi.ps1",
-      "bytes": 61355,
-      "sha256": "bb4a59c6835b214c489de04a0be64b0fd20fcd9f74388d3f7c0b9906e4bc7916"
+      "bytes": 73536,
+      "sha256": "f6b52ea2d11072f5ebc81b628229a7620c7e26745a21200a2c02e487cca1ce54"
     },
     {
       "path": "software/operations/scripts/run_arm_sim.py",
@@ -374,8 +379,8 @@
     },
     {
       "path": "software/python/arm_mcp/server.py",
-      "bytes": 133841,
-      "sha256": "c9e010f04a893e0f794a22da8b3fc0f0a4015dd76586556ae805bf8d3af7f282"
+      "bytes": 134347,
+      "sha256": "8a95c06e29f668a59547c6ecc0894f47a04864dd637fbe25090d8027610adf55"
     },
     {
       "path": "software/python/arm_mcp/tests/test_config.py",
@@ -384,8 +389,8 @@
     },
     {
       "path": "software/python/arm_mcp/tests/test_protocol.py",
-      "bytes": 16129,
-      "sha256": "a96a28bbc5fa37ce8d9e8600f88d64f3b6076fe476c9c6df412705dd5c0ef1f9"
+      "bytes": 16732,
+      "sha256": "0dee42f22cd84f497431930ac4c412f2cf7a6a85a43b558f480186a2ec117e18"
     },
     {
       "path": "software/python/arm_mcp/tests/test_source_index.py",
@@ -614,8 +619,8 @@
     },
     {
       "path": "software/python/robot_gateway/simple_arm_api.py",
-      "bytes": 336181,
-      "sha256": "6d45b1de03de9587bfac94e921e14699cdd48a0fc04e53044f74e2af7abc2bf7"
+      "bytes": 347879,
+      "sha256": "f0e96413c23121136c2ccb52080980ba6485a2283b5883872e0e3178530e12ff"
     },
     {
       "path": "software/python/robot_gateway/strict_contract.py",
@@ -644,8 +649,8 @@
     },
     {
       "path": "software/python/robot_gateway/tests/test_arm_pi_restore_script.py",
-      "bytes": 23872,
-      "sha256": "adfdb1597a4a22084dd176901c2cffd33c3e727f1ffbd102470ba5cd03c64d81"
+      "bytes": 29527,
+      "sha256": "0958d59bb3c2148e27d57f98c7c57d4bf730ed665cd77e259798bf98558bb4d5"
     },
     {
       "path": "software/python/robot_gateway/tests/test_arm_pi_sd_image_script.py",
@@ -676,6 +681,21 @@
       "path": "software/python/robot_gateway/tests/test_pi_camera.py",
       "bytes": 34675,
       "sha256": "4a5a1a28e260324c38289775cf731855d8b138dc57d0075c700cfa723bfe5720"
+    },
+    {
+      "path": "software/python/robot_gateway/tests/test_prepare_arm_recovery.py",
+      "bytes": 15542,
+      "sha256": "e8a591b9d6f3249db917e8e794f206762f6d2e469a8a429be6b4228f2ec4bfbc"
+    },
+    {
+      "path": "software/python/robot_gateway/tests/test_recovery_base_reference.py",
+      "bytes": 11136,
+      "sha256": "d4ebbe4dadece3e0f8ab560eaa626271ebb84284125527ebc3884e8104345565"
+    },
+    {
+      "path": "software/python/robot_gateway/tests/test_recovery_dispatch_gate.py",
+      "bytes": 2998,
+      "sha256": "31ee23536ffc81af86e64007aa87902e509e5484e32b722ab2fdbc3c5714b112"
     },
     {
       "path": "software/python/robot_gateway/tests/test_request_validation.py",

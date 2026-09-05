@@ -20,10 +20,11 @@
   uses an editable checkout so the backend can find the local frontend build.
 - The setup and deployment examples are Windows/PowerShell-first. Other host
   environments need their own verification.
-- Portable Pi recovery is incomplete and has no validated backup-to-restore
-  round trip. Metadata/provenance gaps and missing restored-Base invalidation
-  block physical use of the exported restore script. See the
-  [release review](RELEASE_REVIEW.md) before planning recovery.
+- Portable Pi recovery has local archive/provenance and restored-Base guard
+  tests, but no validated replacement-device round trip. See the
+  [release review](RELEASE_REVIEW.md) before planning supervised recovery.
+- The Live startup lifecycle fix is locally tested. A fresh installed-stack
+  run is still needed to establish physical responsiveness and stability.
 - The dashboard uses the external Codex tools; it does not contain Codex by
   itself.
 - No public license has been selected yet.

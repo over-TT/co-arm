@@ -152,6 +152,7 @@ function readiness(state: SimpleArmState | null) {
   if (state.connection !== "online") return "The REAL controller is offline.";
   if (state.bus !== "online") return "The servo bus is not healthy.";
   if (state.stopped) return "STOP is latched. Clear it from Control before enabling live follow.";
+  if (state.baseReferenceRequired === true) return "Recovery requires physical Base alignment and Set zero here in Control before enabling live follow.";
   if (state.controller?.liveFollowV1 !== true) return "Controller firmware 2.7+ with Fast Follow feedback support is required.";
   if (state.floorGuard?.enabled !== true) return "Floor guard must be on for live follow.";
   const joints = jointsOf(state);
@@ -643,29 +644,34 @@ export function ArmLiveFollow({ request = defaultRequest, backendId, onControlBu
     };
   }, [requestEnd]);
 
-  useEffect(() => () => {
-    mounted.current = false;
-    generationRef.current += 1;
-    if (pumpTimerRef.current !== null) globalThis.clearTimeout(pumpTimerRef.current);
-    if (terminalFrameAbortTimerRef.current !== null) globalThis.clearTimeout(terminalFrameAbortTimerRef.current);
-    if (terminalWatchdogRef.current !== null) globalThis.clearTimeout(terminalWatchdogRef.current);
-    if (startDeadlineTimerRef.current !== null) globalThis.clearTimeout(startDeadlineTimerRef.current);
-    if (startRecoveryTimerRef.current !== null) globalThis.clearTimeout(startRecoveryTimerRef.current);
-    if (stopWatchdogRef.current !== null) globalThis.clearTimeout(stopWatchdogRef.current);
-    const startAttempt = startAttemptRef.current;
-    if (startAttempt && !startAttempt.cancelStarted) {
-      startAttempt.cancelStarted = true;
-      startAttempt.controller.abort();
-      void startAttempt.api.cancelLiveFollowStart(startAttempt.id).catch(() => undefined);
-    }
-    startAttempt?.cancelController?.abort();
-    stopAbortRef.current?.abort();
-    frameAbortRef.current?.abort();
-    endAbortRef.current?.abort();
-    const sessionId = sessionRef.current;
-    if (sessionId && apiRef.current && !endCallRef.current) {
-      void apiRef.current.endLiveFollow(sessionId, false).catch(() => undefined);
-    }
+  useEffect(() => {
+    // StrictMode replays setup after cleanup on the same component instance.
+    // Restore UI updates without restoring any cancelled motion authority.
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      generationRef.current += 1;
+      if (pumpTimerRef.current !== null) globalThis.clearTimeout(pumpTimerRef.current);
+      if (terminalFrameAbortTimerRef.current !== null) globalThis.clearTimeout(terminalFrameAbortTimerRef.current);
+      if (terminalWatchdogRef.current !== null) globalThis.clearTimeout(terminalWatchdogRef.current);
+      if (startDeadlineTimerRef.current !== null) globalThis.clearTimeout(startDeadlineTimerRef.current);
+      if (startRecoveryTimerRef.current !== null) globalThis.clearTimeout(startRecoveryTimerRef.current);
+      if (stopWatchdogRef.current !== null) globalThis.clearTimeout(stopWatchdogRef.current);
+      const startAttempt = startAttemptRef.current;
+      if (startAttempt && !startAttempt.cancelStarted) {
+        startAttempt.cancelStarted = true;
+        startAttempt.controller.abort();
+        void startAttempt.api.cancelLiveFollowStart(startAttempt.id).catch(() => undefined);
+      }
+      startAttempt?.cancelController?.abort();
+      stopAbortRef.current?.abort();
+      frameAbortRef.current?.abort();
+      endAbortRef.current?.abort();
+      const sessionId = sessionRef.current;
+      if (sessionId && apiRef.current && !endCallRef.current) {
+        void apiRef.current.endLiveFollow(sessionId, false).catch(() => undefined);
+      }
+    };
   }, []);
 
   const readinessMessage = readiness(state);

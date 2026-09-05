@@ -1,15 +1,58 @@
 # Status and evidence
 
-Last public-source review: **2026-09-04**.
+Last curated-source review: **2026-09-05**.
 
 This page reports evidence, not aspiration. Historical hardware statements are
 dated. Nothing in the repository is fresh live state.
 
 Release assessment: a source/reference-build candidate, not a complete
-copy-and-build kit. The exported physical recovery path has unresolved
-Base-reference and archive/provenance blockers; see [Release review](RELEASE_REVIEW.md).
+copy-and-build kit. Recovery's software guards are now covered locally, but a
+replacement-device round trip and fresh physical Live acceptance are still
+required; see [Release review](RELEASE_REVIEW.md).
 
-## Current public source snapshot
+## September 5 follow-up: Live and recovery
+
+- Fixed Live remaining stuck after React StrictMode effect replay. The new
+  regression exercises telemetry, explicit startup, and session end.
+- Restored Base calibration stays visibly untrusted even with a surviving HAT
+  frame. Recovery disables Hold/drive/Live, survives Clear STOP, and requires
+  explicit measured zero plus durable readback. Release and STOP remain usable.
+- Final grouped/legacy dispatch rechecks the recovery gate after hold
+  acquisition; failure-path tests cover mid-command gating and persistence.
+- Backup permits absent historical restore metadata and describes stale
+  provenance without rewriting it. Portable Prepare verifies an archive and
+  produces new archive-bound provenance and the independent Base marker.
+- The setup runbook now documents archive preparation and the distinction
+  between pre-commissioning Verify and a new post-zero protected snapshot.
+- CI includes actual Windows recovery regressions, not only script parsing.
+  This workflow change has not been pushed or run on GitHub.
+
+Final local verification on Windows (Python 3.11.9 / Node 24.14.1), reusing
+the existing test environments:
+
+- **848 Python tests and 9 nested subtests passed** across the gateway, backend,
+  MCP, simulator contracts, operations, and source-index tests.
+- **201 dashboard tests passed**, followed by TypeScript and the 42-module
+  Vite production build.
+- A new isolated PEP 517 wheel build succeeded. All **44 payload files** match
+  the final source manifest; source-isolated imports loaded the four package
+  entry modules from its separate installed target directory.
+- All **6 PowerShell operations scripts parsed**. Recovery tests include real
+  GNU-tar layout fixtures, owner-only Windows permissions, read-only Verify,
+  changed-input refusals, durable Base-gate ordering, and activation contracts.
+- The **159-file software manifest** and **236-file repository check** pass.
+  Only the unchosen license and absent approved media warnings remain.
+
+Starlette deprecations, jsdom's missing-canvas notice, and cleanup permissions
+on an older Windows temporary fixture remain visible; they did not fail tests.
+Dependency audits, firmware host tests, and the full fresh-environment smoke
+below are September 4 evidence, not newly repeated claims.
+
+These are local software changes. No Pi deployment, service restart, firmware
+flash, physical motion, or remote mutation was performed. A read-only state
+check found the reference arm online, but that is not a physical Live test.
+
+## September 4 release baseline (historical verification)
 
 | Area | Included state | Evidence tier |
 | --- | --- | --- |
@@ -19,10 +62,10 @@ Base-reference and archive/provenance blockers; see [Release review](RELEASE_REV
 | Arm MCP/plugin | Typed Arm tools, explicit SIM/REAL identity verification, structured MCP output, repo-local marketplace, setup skill, and configured-arm runtime skill | MCP/index tests included in the full Python run; plugin/marketplace and both skills validated; no installed configuration changed |
 | Isaac Sim | Four-joint URDF/model, deterministic desk/camera scene, bounded interpolation and frame-quality policy, persistent bridge, simulator HTTP gateway, and supervised launcher | Source/contracts tested; effective square-pixel Camera Module 3 Wide projection is explicit; Isaac runtime and vendor assets are not bundled |
 | Arm HAT | `arm-hat-2.7.2` ESP32 controller source, shared library, and protocol fixtures | 17 host tests passed; device build/flash remains a separate tier |
-| Operations | Pi service templates, deployment, physical-UART mode control, status, backup/restore/imaging, firmware compile helper, and Isaac launcher | Six scripts parsed; source/contracts tested; portable backup/restore has unresolved release blockers |
+| Operations | Pi service templates, deployment, physical-UART mode control, status, backup/restore/imaging, firmware compile helper, and Isaac launcher | Six scripts parsed; source/contracts tested; recovery findings at this baseline motivated the September 5 follow-up |
 | Printable parts | All 12 current printed parts: both Base gears, the Base stack, arm links, servo mounts/covers, and camera holder/cover | Files inspected; final print settings are not included |
 
-Current candidate verification completed on 2026-09-04 using Windows, Python
+The preceding baseline verification completed on 2026-09-04 using Windows, Python
 3.11.9, Node 24.14.1, and pnpm 11.19.0. Python used a new virtual environment;
 dashboard dependencies were installed from the frozen lock in a separate copy
 of the candidate source, without replacing an existing installation:
@@ -87,8 +130,8 @@ firmware compilation, tunnel/MCP configuration, commissioning, and operation.
 
 That path covers source validation and connection to an existing commissioned
 arm. A supplied Isaac installation still needs its own runtime verification.
-The portable physical recovery branch is incomplete and must not be treated
-as ready for an SD-card loss. A reproducible new mechanical
+The portable physical recovery branch still needs replacement-device
+acceptance and must not be treated as a proven SD-card recovery kit. A reproducible new mechanical
 build is now partly documented by all 12 printable parts. It still needs the
 bearing details, full fastener and print schedule, as-built wiring/pinout, and
 power details before it becomes a complete copy-and-build package.
