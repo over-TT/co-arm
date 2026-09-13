@@ -24,8 +24,8 @@
     },
     {
       "path": "software/dashboard/package.json",
-      "bytes": 1013,
-      "sha256": "c5bca5dc33b4ec8b26af6899d3b55b4c087f360c9f892d93cc1e9b25f0276e7b"
+      "bytes": 1058,
+      "sha256": "1916704e549989bd0b7c9d19d2906ed3bef58cd3ab9903c5376314461db28532"
     },
     {
       "path": "software/dashboard/pnpm-lock.yaml",
@@ -204,8 +204,8 @@
     },
     {
       "path": "software/firmware/libraries/ArmHatController/library.properties",
-      "bytes": 357,
-      "sha256": "ad1fe4e15fb580f711d07e9741e075ac2e6d28b467da6ded8c95495731fdde7f"
+      "bytes": 394,
+      "sha256": "2b49630ce489bcfce851534e0a41e3a51cfa7dc139f43c1288eaf0c265010be0"
     },
     {
       "path": "software/firmware/libraries/ArmHatController/src/ArmHatController.cpp",
@@ -259,8 +259,8 @@
     },
     {
       "path": "software/operations/README.md",
-      "bytes": 4937,
-      "sha256": "272723f308bdd06aa94c906a7eeacfbef55dba6f0b9e737c588a2595446389a0"
+      "bytes": 4914,
+      "sha256": "2394457060ff3fd5402dc627d1a1c5555e33c3b707ba7cdd21c7705659c9002a"
     },
     {
       "path": "software/operations/deploy/arm-gateway-physical-uart.conf",
@@ -351,6 +351,16 @@
       "path": "software/plugin/plugins/arm-alliance/skills/arm-alliance/SKILL.md",
       "bytes": 2948,
       "sha256": "931c112bac427e9fc5abd48f177379facc0fead5849f230bc74f6e1653334051"
+    },
+    {
+      "path": "software/python/LICENSE",
+      "bytes": 4563,
+      "sha256": "ffcca38841adb694b6f380647e15f17c446a4d1656fed51a1e2041d064c94cc8"
+    },
+    {
+      "path": "software/python/NOTICE",
+      "bytes": 182,
+      "sha256": "45c79c034e449cac7ae56c9c9575c2994d75d9e0e46e9aa8d48d74fd55911134"
     },
     {
       "path": "software/python/README.md",
@@ -549,8 +559,8 @@
     },
     {
       "path": "software/python/pyproject.toml",
-      "bytes": 1054,
-      "sha256": "b744309d8919ac588437ee5dd0e6641dd352ede7ed20f65ac0477cd6ad4dbfe7"
+      "bytes": 1133,
+      "sha256": "fd54fa8fe0a3dfeb138974a47fc772287af5f08224220a69775858628e4c3ff6"
     },
     {
       "path": "software/python/requirements.lock",
@@ -784,13 +794,13 @@
     },
     {
       "path": "software/python/web_backend/tests/test_gateway_identity.py",
-      "bytes": 13449,
-      "sha256": "7677e24792ebcf6cc09b63e41c0e486fcc7c34787b1539c519aca8543a9c21b4"
+      "bytes": 13448,
+      "sha256": "837e335caba75019dac8fe9480289dba5fd6b8fb90a531b74efc6d2dc5f9ac78"
     },
     {
       "path": "software/python/web_backend/tests/test_response_provenance.py",
-      "bytes": 5801,
-      "sha256": "43637073a5caa228b634444d8cbcd30995ff11aa0ae3896acf8ac0abefbabfd4"
+      "bytes": 5800,
+      "sha256": "016f041f837483b221e2bd3a42b51e4958e9a8bfd5f8c68c96fbd81955ddc57e"
     },
     {
       "path": "software/python/web_backend/tests/test_standalone_app.py",

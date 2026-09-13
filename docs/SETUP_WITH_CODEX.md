@@ -699,10 +699,11 @@ Before pushing:
 - run manifest, repository, Python, dashboard, firmware, and script checks for
   the exact worktree/commit;
 - review current files and Git history for private data;
-- choose explicit software/hardware/documentation/media licenses;
+- preserve the explicit noncommercial license split in `LICENSING.md`;
 - review third-party notices;
 - exclude generated builds, runtime state, raw media, backups, tokens, private
   reports, and toolchains;
 - label every claim with its actual evidence tier.
 
-No license has been selected, so public reuse terms are not currently granted.
+Software is available under PolyForm Noncommercial 1.0.0; designs,
+documentation, and media use CC BY-NC 4.0. See [Licensing](../LICENSING.md).

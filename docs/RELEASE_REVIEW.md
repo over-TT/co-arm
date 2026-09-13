@@ -1,8 +1,14 @@
-# Release review — updated 2026-09-05
+# Release review — engineering 2026-09-05; publication scope 2026-09-13
 
 The first release should describe a working four-axis camera-arm prototype,
 with source and printable parts. It is not yet a complete copy-and-build kit.
 Do not publish the current recovery tools as a supported physical recovery path.
+
+On 2026-09-13 the owner authorized publishing this prototype source with
+PolyForm Noncommercial 1.0.0 software and CC BY-NC 4.0 designs/documentation/media.
+The exact single-bearing specification, full parts schedule, and approved demo
+are follow-up milestones. The outstanding device tests below remain required
+before claiming supported recovery or exact-stack physical acceptance.
 
 This review covered the exported gateway/backend, dashboard, MCP boundary,
 simulator contracts, firmware host tests, installation, packaging, operations,
@@ -41,7 +47,7 @@ formal security certification or a new physical-arm acceptance test.
 
 See [Status](STATUS.md) for the exact verification results and their limits.
 
-## Remaining release blockers
+## Remaining acceptance and demo work
 
 ### 1. Recovery still needs device round-trip acceptance
 
@@ -78,11 +84,13 @@ Base must remain untrusted until the new reference is confirmed. Include
 tampered/stale provenance and failed-write cases. Do not fabricate metadata or
 clear STOP to make a recovery check pass.
 
-### 2. Public terms and provenance need owner decisions
+### 2. Public terms selected; media and detailed provenance remain
 
-Choose the licenses and attribution described in [Licensing](../LICENSING.md),
-review CAD/media provenance, and approve the actual photos/clip. No approved
-public photos or videos are included yet. Drafting a post is not publishing it.
+The owner selected the noncommercial license split and existing over-TT
+attribution in [Licensing](../LICENSING.md). The owner-supplied printable parts
+are included under that scope; third-party rights remain unchanged. Record
+any adapted-material provenance and approve photos/clip before adding them.
+No approved public photos or videos are included yet.
 
 ### 3. New builders still need physical facts
 
@@ -97,8 +105,9 @@ details. Use the [open questions](OPEN_QUESTIONS.md) and
 Local tests do not prove an installed Pi, flashed controller, running Isaac
 scene, or physical arrival. Validate the exact candidate on the reference arm
 with a bounded supervised commissioning/demo run. After an explicitly approved
-push, require the GitHub workflow to pass for that exact commit and inspect
-the rendered documentation before changing visibility or tagging a release.
+push, check the GitHub workflow for that exact commit and inspect the rendered
+documentation. The authorized public prototype snapshot does not claim that
+the unfinished physical acceptance work passed; a release tag is a separate step.
 
 ## Recommended next scope
 
@@ -120,7 +129,8 @@ and one good demo are dependable.
 
 ## Publication boundary
 
-This pass prepares local source and documentation. It does not push, change
-repository visibility, choose a license, upload media, tag a release, or post
-to X. The [launch draft](LAUNCH_DRAFT.md) is for owner review after the gates
-above are satisfied.
+The owner authorized the noncommercial licenses, Git push, and public
+repository visibility on 2026-09-13. That authorization covers the documented
+prototype source snapshot. It does not claim completed hardware acceptance,
+approved demo media, a tagged release, or a social post. The
+[launch draft](LAUNCH_DRAFT.md) remains a draft for the later demo.

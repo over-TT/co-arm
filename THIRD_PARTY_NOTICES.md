@@ -4,6 +4,11 @@ This repository contains project source and dependency manifests. Generated
 dependency trees, vendor toolchains, firmware binaries, simulator installs, and
 factory-firmware backups are not redistributed.
 
+Project-owned material uses the category-specific noncommercial licenses in
+[Licensing](LICENSING.md). Those licenses do not replace dependency or vendor
+licenses. The license texts in `LICENSE` and `LICENSES/` are reproduced from
+the official PolyForm Project and Creative Commons publications without changes.
+
 ## Python package dependencies
 
 The standalone Python package declares FastAPI, HTTPX, Pillow, Pydantic,

@@ -112,5 +112,7 @@ python tools/check_repo.py
 ```
 
 Run the affected Python, dashboard, firmware, and PowerShell checks as well.
-Passing software checks never proves a physical arm. No public reuse terms
-exist until explicit licenses are added.
+Passing software checks never proves a physical arm. Preserve the noncommercial
+license split in `LICENSING.md`: PolyForm Noncommercial 1.0.0 for software and
+CC BY-NC 4.0 for designs, documentation, and media. Call the project
+source-available; do not describe its software as OSI open source.

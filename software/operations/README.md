@@ -67,23 +67,24 @@ and media binding under ignored `software/runtime/robot-gateway/pi-backups/`.
 It is private recovery state for that Pi, not a template for another person's
 credentials, Base frame, network, or host identity.
 
-## Recovery release blocker
+## Recovery acceptance still pending
 
-Do not use the exported `restore-arm-pi.ps1` for physical recovery until the
-scripts and gateway are fixed together and a full backup-to-restore round trip
-passes. A valid archive checksum proves saved bytes, not a restorable kit.
+The September 5 source fixes cover the earlier recovery findings:
 
-- Fresh deployment does not create the recovery manifest/provenance files
-  required by `backup-arm-pi.ps1`.
-- Normal calibration updates `arm-joints.json` but can leave its recovery
-  provenance hash stale. Restore requires separate token, calibration, and
-  provenance inputs and rejects that mismatch; it has no archive import path.
-- Restored Base calibration needs an enforced invalid-reference gate until
-  physical re-zeroing. The gateway can currently pair an old restored zero with
-  a surviving valid HAT frame. Its generic STOP latch can be cleared without
-  establishing that new reference. A cold HAT continuity loss still blocks Base.
+- Backup accepts a fresh deployment without historical recovery metadata and
+  records stale provenance without silently rewriting it.
+- Portable Prepare verifies a protected archive and derives provenance from
+  its frozen calibration; prepared inputs are bound by their digests.
+- Restored Base calibration has an independent reference gate. Clearing STOP
+  cannot establish Base truth; explicit physical re-zero and durable readback
+  are required, and execution rechecks the gate before dispatch.
 
-The snapshot requirement above remains in force. Do not fabricate provenance
-or clear STOP to bypass these gaps. Keep existing protected archives and consult
-the [release review](../../docs/RELEASE_REVIEW.md) for the coordinated fix and
-verification work still required.
+These paths have local regressions, including Windows archive/permission
+checks. A complete backup-to-replacement-device round trip has not been
+accepted. The public prototype includes this experimental source but does not
+offer it as a supported physical recovery kit. A valid archive checksum proves
+saved bytes, not physical continuity or successful restoration.
+
+The snapshot requirement above remains in force. Keep existing protected
+archives and follow the remaining device-acceptance work in the
+[release review](../../docs/RELEASE_REVIEW.md).

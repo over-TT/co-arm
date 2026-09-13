@@ -136,4 +136,3 @@ def test_normalized_response_keeps_its_own_instance_during_concurrent_restart(
             assert "/api/camera/autofocus" not in calls
     finally:
         registry.close()
-

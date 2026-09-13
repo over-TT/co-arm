@@ -46,6 +46,8 @@ from `media/raw/`; it is intentionally ignored.
 
 ## License boundary
 
-Contributions cannot be accepted for redistribution until the repository owner
-selects licenses and a contribution policy. Until then, coordinate privately
-with the owner before submitting third-party or original source/CAD.
+You retain copyright in your contributions. By submitting a contribution, you
+offer it under the license for that material in [Licensing](LICENSING.md):
+PolyForm Noncommercial 1.0.0 for software and CC BY-NC 4.0 for designs,
+documentation, and media. Preserve existing attribution and identify any
+third-party or adapted material with its source and original license.

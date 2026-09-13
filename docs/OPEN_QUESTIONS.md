@@ -2,14 +2,18 @@
 
 These are the few project details still waiting to be filled in.
 
-## Blocking the first public release
+## Public prototype decisions
 
-- [ ] Decide whether and when the existing private GitHub repository should be
-  made public.
-- [ ] Choose the public creator/organization name, or choose no public credit.
-- [ ] Choose licenses for software, hardware/CAD, documentation, and media.
+- [x] Public source release authorized on 2026-09-13.
+- [x] Attribute the project to its existing public creator, over-TT.
+- [x] PolyForm Noncommercial 1.0.0 for software; CC BY-NC 4.0 for designs,
+  documentation, and media. See `LICENSING.md`.
 - [ ] Confirm whether future CAD/STLs are entirely original or derived from
   vendor/community files, and record every source.
+
+The owner reports one Base bearing. Its exact specification and the complete
+purchased-parts list can follow the prototype/demo release; the assembly guide
+remains explicitly incomplete.
 
 ## Hardware identification
 

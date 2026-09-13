@@ -1,9 +1,9 @@
 # Launch draft
 
-Draft only. Use after the release blockers in [Release review](RELEASE_REVIEW.md)
-are resolved, the owner approves public terms/media, and the exact source is
-available at the public repository link. Do not describe this as open source
-until the chosen licenses are actually present.
+Draft only. The owner authorized a public prototype source release under the
+noncommercial terms in [Licensing](../LICENSING.md). Publish demo media only
+after approval and verification of its actual outcome. Describe the project as
+source-available for noncommercial use, not OSI open source.
 
 ## Release title
 
@@ -20,6 +20,10 @@ This release contains the focused software stack and 12 printable parts:
 dashboard, Pi gateway, controller firmware, agent tools, simulator source, tests,
 and setup/build notes. Start with the dashboard quickstart; it works without
 connecting any hardware.
+
+Software uses PolyForm Noncommercial 1.0.0; designs, documentation, and media
+use CC BY-NC 4.0. Full build details and the physical recovery round trip remain
+unfinished, as recorded in the release limitations.
 
 It is an experimental reference build. The camera is not a calibrated depth
 sensor, the arm has no gripper, and software tests do not establish mechanical

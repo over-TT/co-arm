@@ -83,7 +83,8 @@ is still required.
 
 ## Owner decisions still required
 
-Before the first public release, answer the items in
-[`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md). The critical ones are repository
-visibility, public attribution, license split, and CAD provenance. The ARM-only
-software scope is now recorded in `SOURCE_RELEASE_PLAN.md`.
+The public prototype release and noncommercial license split are authorized;
+see [`LICENSING.md`](../LICENSING.md). The remaining owner/build facts are in
+[`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md). Detailed third-party provenance,
+complete build reproduction, and approved demo media remain follow-up work.
+The ARM-only software scope is recorded in `SOURCE_RELEASE_PLAN.md`.

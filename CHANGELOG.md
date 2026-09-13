@@ -4,6 +4,14 @@ All notable public repository changes will be recorded here.
 
 ## Unreleased
 
+- Selected PolyForm Noncommercial 1.0.0 for software and firmware, and
+  CC BY-NC 4.0 for designs, documentation, and media. Added full license texts,
+  attribution, contribution terms, and Python/dashboard/firmware metadata.
+- Prepared the public prototype source release; the full purchased-parts
+  schedule and demo media remain follow-up work.
+- Fixed Live startup after React StrictMode replay and added locally tested
+  recovery Base-reference gates, archive preparation, provenance handling,
+  and Windows recovery regressions. Exact-stack physical acceptance remains pending.
 - Fixed source-manifest drift between Windows files and committed Git exports,
   and added an LF line-ending release gate with regressions.
 - Ported Camera arrival/pursuit tuning, strict dashboard target handling,
@@ -13,8 +21,8 @@ All notable public repository changes will be recorded here.
   environment can collect the simulator camera-policy tests.
 - Added a short no-hardware quickstart, existing-arm setup routing, a dated
   release review, and draft release/X copy.
-- Documented unresolved portable recovery blockers: Base-reference invalidation,
-  stale calibration provenance, and missing fresh-install recovery metadata.
+- Documented the remaining portable recovery device-acceptance work after the
+  Base-reference, provenance, and fresh-install metadata fixes.
 - Rewrote the README around the physical build and why it exists, using the
   same direct voice as Rock and DOT instead of leading with software policy.
 - Added all 12 current 3MF parts: both printed Base gears, bearing-bottom piece,
@@ -58,5 +66,4 @@ All notable public repository changes will be recorded here.
   with a stale-manifest verification command.
 - Kept source/build evidence distinct from previously recorded reference-arm
   evidence; no live hardware verification was performed for this export.
-- Retained the explicit no-license warning. Public reuse terms remain pending
-  an owner license decision.
+- Replaced the earlier no-license status with explicit noncommercial terms.

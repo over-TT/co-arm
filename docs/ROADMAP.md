@@ -30,9 +30,10 @@
   source-isolated wheel smoke, focused tests, clean-checkout CI, and Dependabot.
 - Made the Codex tools identify SIM versus the real arm and read current state
   instead of blindly repeating a move whose reply was lost.
-- Remaining publication work: choose licenses, finish the third-party license
-  review, run CI for the exact pushed commit, and complete the owner launch
-  assets.
+- Selected PolyForm Noncommercial 1.0.0 software and CC BY-NC 4.0
+  designs/documentation/media for the authorized public prototype snapshot.
+- Remaining work: check CI for the exact pushed commit, document adapted
+  third-party material where applicable, and add approved demo media.
 
 ## R3 — final-path physical qualification
 

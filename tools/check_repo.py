@@ -16,6 +16,11 @@ ROOT = Path(__file__).resolve().parents[1]
 MAX_FILE_BYTES = 25 * 1024 * 1024
 
 REQUIRED = {
+    "LICENSE",
+    "NOTICE",
+    "LICENSES/CC-BY-NC-4.0.txt",
+    "software/python/LICENSE",
+    "software/python/NOTICE",
     ".github/dependabot.yml",
     ".github/workflows/repo-check.yml",
     "README.md",
@@ -194,6 +199,8 @@ FORBIDDEN_SCOPE_PATH_FRAGMENTS = {
 }
 
 ALLOWED_PYTHON_TOP_LEVEL = {
+    "LICENSE",
+    "NOTICE",
     "README.md",
     "arm_mcp",
     "arm_sim",

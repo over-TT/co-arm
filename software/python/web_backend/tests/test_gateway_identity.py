@@ -419,4 +419,3 @@ def test_real_gateway_header_validates_each_present_body_provenance_field(
     with pytest.raises(RobotGatewayError, match="mismatched process provenance"):
         client.arm_state()
     client.close()
-

@@ -35,7 +35,10 @@ of their owners.
 
 All 12 current 3MF parts were supplied directly by the project owner on
 2026-08-26. Their archives contain model titles/revisions and geometry but no
-author name, source URL, or third-party license metadata. Before publishing or
-licensing them, confirm whether every mesh is fully original or adapted from
-another source. If anything was adapted, record its source, author, license,
-changes, and revision in `hardware/3mf/README.md`.
+author name, source URL, or third-party license metadata. On 2026-09-13 the
+owner authorized their inclusion in the public prototype under the applicable
+terms in [Licensing](../LICENSING.md). This records the owner's release decision,
+not an independent audit of mesh authorship. The license grants only rights
+the licensor can grant. Record the source, author, original license, changes,
+and revision for any adapted material in `hardware/3mf/README.md`; third-party
+rights and notices remain unchanged.

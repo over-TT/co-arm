@@ -181,5 +181,11 @@ reference arm.
 
 ## License
 
-No code, hardware, documentation, or media license has been selected yet. See
-[`LICENSING.md`](LICENSING.md) before reusing or publishing the project.
+Made by [over-TT](https://github.com/over-TT). Available for noncommercial use:
+
+- **Software and firmware:** [PolyForm Noncommercial 1.0.0](LICENSE).
+- **Printable designs, documentation, and media:** [CC BY-NC 4.0](LICENSES/CC-BY-NC-4.0.txt).
+
+Commercial use requires separate permission. See [Licensing](LICENSING.md) for
+the exact scope, attribution, and third-party terms. This is source-available
+software, not an OSI open-source release.

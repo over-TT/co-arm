@@ -1,6 +1,36 @@
 # Status and evidence
 
-Last curated-source review: **2026-09-05**.
+Last engineering review: **2026-09-05**. License/publication update: **2026-09-13**.
+
+The owner selected PolyForm Noncommercial 1.0.0 for software and CC BY-NC 4.0
+for designs, documentation, and media, and authorized a public prototype
+source release. See [Licensing](../LICENSING.md). The single Base bearing's
+specification, full purchased-parts list, and approved demo media remain
+follow-up work. This scope does not claim a complete reproducible build kit.
+
+## September 13 public prototype validation
+
+The final local release tree passed **848 Python tests plus 9 subtests**,
+**201 dashboard tests**, **17 Arm HAT host tests**, TypeScript and the 42-module
+Vite production build, and parsing of all **6 operations scripts**. The Python
+wheel built successfully, its PolyForm license expression and bundled
+license/notice matched the source, and its separate installed-environment
+smoke passed. Existing release test environments were reused; this was not a
+new dependency installation or a new dependency-vulnerability audit.
+
+The **161-file software manifest**, **241-file repository check**, and Git
+whitespace check passed. The only repository warning is the absent approved
+demo media. A scan of all existing Git refs covered **365 distinct file
+revisions** without a private-data-pattern, forbidden-file, or oversize finding.
+
+Windows recovery fixtures need a short temporary path: the deeply nested
+checkout path exceeded a filesystem path limit in the first full attempt.
+The complete run passed from a short temporary directory. Starlette
+deprecations and the known jsdom canvas notice remain non-failing warnings.
+
+This validation does not constitute a Pi deployment, firmware flash, new
+physical trial, or completed recovery round trip. The exact pushed commit's
+GitHub workflow and visibility are verified separately from local results.
 
 This page reports evidence, not aspiration. Historical hardware statements are
 dated. Nothing in the repository is fresh live state.
@@ -186,7 +216,7 @@ or thermal condition.
 
 ## Distribution boundary
 
-No license has been selected, so public reuse terms are not granted. Runtime
+The category-specific noncommercial terms are in [Licensing](../LICENSING.md). Runtime
 state, captures, private reports, credentials, backups, toolchains, installed
 agent configuration, and unrelated workspace code are intentionally absent.
 The dashboard contains no embedded agent runtime; agent operation uses the

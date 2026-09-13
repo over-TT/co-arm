@@ -27,7 +27,9 @@
   run is still needed to establish physical responsiveness and stability.
 - The dashboard uses the external Codex tools; it does not contain Codex by
   itself.
-- No public license has been selected yet.
+- Software uses PolyForm Noncommercial 1.0.0; designs, documentation, and media
+  use CC BY-NC 4.0. Commercial use needs separate permission; see
+  [Licensing](../LICENSING.md).
 
 See [Status and evidence](STATUS.md) for dated software and reference-arm
 results, the [release review](RELEASE_REVIEW.md) for unresolved findings, and the
