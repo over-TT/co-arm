@@ -1,6 +1,6 @@
 # Picamera2/libcamera are installed from Raspberry Pi OS apt packages, not pip.
 fastapi==0.141.1
-pydantic==2.13.4
+pydantic==2.13.5
 pyserial==3.5
 starlette==1.6.0
 uvicorn==0.35.0
